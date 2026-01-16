@@ -14,3 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: SharpeningStone
   icon: {fileID: -6276408390063833456, guid: 5e92ac573584a4d4d8762c86f520ae72, type: 3}
+  isStackable: 1
+  maxStack: 1
+  equippedSprite: {fileID: -6276408390063833456, guid: 5e92ac573584a4d4d8762c86f520ae72, type: 3}

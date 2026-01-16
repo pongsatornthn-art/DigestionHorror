@@ -7,19 +7,31 @@ public class InventorySlot : MonoBehaviour
     public Image icon;
     public TextMeshProUGUI amountText;
 
-    // ⭐ เพิ่มบรรทัดนี้: เก็บเลขดัชนีที่แท้จริง
+    // เก็บเลขดัชนีที่แท้จริง
     [HideInInspector] public int slotIndex;
 
-    ItemData item;
+    // เปลี่ยนเป็น public เพื่อให้ ItemDrag มองเห็นได้ง่ายๆ
+    public ItemData item;
+
     bool canEquip;
+
+    void Start()
+    {
+        // ⭐ เพิ่มส่วนนี้: บังคับเปิดการมองเห็นของเมาส์ผ่านโค้ดเลย (กันลืมติ๊กใน Inspector)
+        if (icon != null)
+        {
+            icon.raycastTarget = true;
+        }
+    }
 
     public void AddItem(ItemData newItem, int amount, bool isHotbar)
     {
         item = newItem;
         canEquip = isHotbar;
+
         icon.sprite = item.icon;
 
-        // ทำให้มองเห็นเพื่อรองรับการลาก
+        // ทำให้มองเห็นรูปไอเท็มชัดเจน
         icon.color = Color.white;
         icon.enabled = true;
 
@@ -33,7 +45,8 @@ public class InventorySlot : MonoBehaviour
     public void ClearSlot()
     {
         item = null;
-        // ทำเป็นใสๆ เพื่อรอรับของ
+
+        // ⭐ จุดสำคัญ: ทำให้เป็นสีใส แต่ยังเปิด enabled ไว้ เพื่อให้เมาส์วางของใส่ช่องว่างได้
         icon.sprite = null;
         icon.color = Color.clear;
         icon.enabled = true;

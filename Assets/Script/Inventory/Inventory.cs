@@ -1,8 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using System;
 
-// 1. สร้างคลาสสำหรับเก็บข้อมูลของ + จำนวน (Stack)
 [System.Serializable]
 public class InventoryItem
 {
@@ -20,105 +18,117 @@ public class InventoryItem
 
 public class Inventory : MonoBehaviour
 {
-    // 2. ระบบ Singleton (เพื่อให้ไฟล์อื่นเรียกใช้ได้ง่ายๆ)
     public static Inventory instance;
 
-    void Awake()
-    {
-        if (instance != null)
-        {
-            Debug.LogWarning("มี Inventory มากกว่า 1 อัน! กำลังลบอันเกิน...");
-            return;
-        }
-        instance = this;
-    }
-
-    // 3. ตัวแปรเก็บของ
     public delegate void OnItemChanged();
     public OnItemChanged onItemChangedCallback;
 
-    public List<InventoryItem> items = new List<InventoryItem>(); // รายการของในกระเป๋า
-    public int space = 9; // จำนวนช่องเก็บของ (Hotbar)
+    public int space = 30; // จำนวนช่องทั้งหมด
+
+    // ⭐ เปลี่ยนเป็น List ที่มีช่องว่าง (null) รอไว้
+    public List<InventoryItem> items = new List<InventoryItem>();
 
     [Header("Equipment Settings")]
-    public SpriteRenderer handRenderer;   // ลากตัว Hand มาใส่ตรงนี้
-    public ItemData currentEquippedItem;  // เก็บว่าถืออะไรอยู่
+    public SpriteRenderer handRenderer;
+    public ItemData currentEquippedItem;
 
-    // 4. ฟังก์ชันเพิ่มไอเท็ม (AddItem)
-    public bool AddItem(ItemData item)
+    void Awake()
     {
-        // เช็คว่ามีของชิ้นนี้อยู่แล้วไหม?
-        InventoryItem existingItem = items.Find(i => i.itemData == item);
+        if (instance != null) return;
+        instance = this;
+
+        // ⭐ สร้างช่องว่างรอไว้ให้ครบ 30 ช่อง (กัน Error Index Out of Range)
+        while (items.Count < space)
+        {
+            items.Add(null);
+        }
+    }
+
+    public bool AddItem(ItemData item, int amount = 1)
+    {
+        // 1. ลองหาของเดิมเพื่อ Stack (ต้องไม่เป็น null และชื่อตรงกัน)
+        InventoryItem existingItem = items.Find(i => i != null && i.itemData == item && i.itemData.isStackable && i.amount < i.itemData.maxStack);
 
         if (existingItem != null)
         {
-            // ถ้ามีแล้ว -> ให้เพิ่มจำนวน (Stack)
-            existingItem.AddAmount(1);
+            existingItem.AddAmount(amount);
         }
         else
         {
-            // ถ้ายังไม่มี -> เช็คที่ว่าง
-            if (items.Count >= space)
+            // 2. ถ้าไม่มี ให้หา "ช่องว่างแรก" (ที่เป็น null)
+            int emptyIndex = items.FindIndex(i => i == null);
+
+            if (emptyIndex != -1) // ถ้าเจอช่องว่าง
             {
-                Debug.Log("กระเป๋าเต็ม!");
+                items[emptyIndex] = new InventoryItem(item, amount);
+            }
+            else
+            {
+                Debug.Log("Inventory Full!");
                 return false;
             }
-            // เพิ่มช่องใหม่
-            items.Add(new InventoryItem(item, 1));
         }
 
-        // แจ้งเตือนหน้าจอให้อัปเดต
         if (onItemChangedCallback != null) onItemChangedCallback.Invoke();
         return true;
     }
 
-    // 5. ฟังก์ชันลบไอเท็ม (RemoveItem)
+    // Overload เผื่อเรียกใช้ง่ายๆ
+    public bool AddItem(ItemData item) => AddItem(item, 1);
+
     public void RemoveItem(ItemData item)
     {
-        InventoryItem existingItem = items.Find(i => i.itemData == item);
+        // หาช่องที่มีของนี้อยู่
+        int itemIndex = items.FindIndex(i => i != null && i.itemData == item);
 
-        if (existingItem != null)
+        if (itemIndex != -1)
         {
-            existingItem.amount--; // ลดจำนวนลง 1
+            items[itemIndex].amount--;
 
-            // ถ้าเหลือ 0 ให้ลบทิ้ง
-            if (existingItem.amount <= 0)
+            if (items[itemIndex].amount <= 0)
             {
-                if (currentEquippedItem == item) Unequip(); // ถอดจากมือก่อน
-                items.Remove(existingItem);
+                if (currentEquippedItem == item) Unequip();
+
+                // ⭐ แทนที่จะลบแถวทิ้ง ให้เปลี่ยนเป็น null (ช่องว่าง) แทน
+                items[itemIndex] = null;
             }
 
             if (onItemChangedCallback != null) onItemChangedCallback.Invoke();
         }
     }
 
-    // 6. ฟังก์ชันเช็คของ (HasItem) - ใช้กับระบบ Craft
     public bool HasItem(ItemData itemToCheck)
     {
-        InventoryItem found = items.Find(i => i.itemData == itemToCheck);
-        return found != null && found.amount > 0;
+        return items.Exists(i => i != null && i.itemData == itemToCheck);
     }
 
-    // 7. ฟังก์ชันถือของ (Equip)
     public void EquipItem(ItemData itemToEquip)
     {
         currentEquippedItem = itemToEquip;
-        if (handRenderer != null)
+        if (handRenderer != null && itemToEquip != null)
         {
-            handRenderer.sprite = itemToEquip.icon;
+            handRenderer.sprite = itemToEquip.equippedSprite;
             handRenderer.enabled = true;
         }
     }
 
-    // 8. ฟังก์ชันถอดของ (Unequip)
     public void Unequip()
     {
         currentEquippedItem = null;
         if (handRenderer != null) handRenderer.enabled = false;
     }
 
-    internal void SwapItems(int slotIndex1, int slotIndex2)
+    // ⭐ ฟังก์ชันสลับของ (พระเอกของเรา)
+    public void SwapItems(int indexA, int indexB)
     {
-        throw new NotImplementedException();
+        // เช็คแค่ว่า Index อยู่ในขอบเขต 0-29 ไหม (ไม่ต้องสนว่ามีของไหม)
+        if (indexA >= 0 && indexA < space && indexB >= 0 && indexB < space)
+        {
+            InventoryItem temp = items[indexA];
+            items[indexA] = items[indexB];
+            items[indexB] = temp;
+
+            if (onItemChangedCallback != null) onItemChangedCallback.Invoke();
+        }
     }
 }

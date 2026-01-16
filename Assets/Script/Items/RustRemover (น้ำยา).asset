@@ -14,3 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: RustRemover
   icon: {fileID: 6801951371363190623, guid: dbe31fac8eb547140a934ade6b016982, type: 3}
+  isStackable: 1
+  maxStack: 1
+  equippedSprite: {fileID: 6801951371363190623, guid: dbe31fac8eb547140a934ade6b016982, type: 3}

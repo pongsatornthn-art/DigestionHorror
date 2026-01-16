@@ -2,52 +2,63 @@
 
 public class HotbarController : MonoBehaviour
 {
-    public int selectedSlot = 0;       // ช่องที่เลือกอยู่ (0-8)
-    public RectTransform selector;    // ลากตัว 'Selector' มาใส่
-    public Transform slotParent;      // ลากตัว 'Grid' ที่เก็บปุ่มมาใส่
-
     Inventory inventory;
+
+    // ⭐ แก้ที่ 1: ตั้งค่าเริ่มต้นเป็น 0 (ช่องแรก) เสมอ
+    int currentSlotIndex = 0;
 
     void Start()
     {
         inventory = Inventory.instance;
-        UpdateSelectorUI();
+
+        // สั่งให้คอยฟังการเปลี่ยนแปลงในกระเป๋า
+        inventory.onItemChangedCallback += RefreshHand;
+
+        // ⭐ แก้ที่ 2: เริ่มเกมปุ๊บ สั่งให้เช็คของในมือทันที (จะได้ไม่บั๊กตอนเริ่ม)
+        RefreshHand();
+        Debug.Log("เริ่มเกม: เลือกช่อง 1 อัตโนมัติ");
     }
 
     void Update()
     {
-        // 1. รับค่าจากปุ่มตัวเลข 1 - 9
         for (int i = 0; i < 9; i++)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1 + i))
             {
-                selectedSlot = i;
-                UpdateSelectorUI();
-                AutoEquip(); // สั่งให้ถือของในช่องที่เลือกทันที
+                currentSlotIndex = i;
+                EquipBySlotIndex(i);
+                // Debug.Log($"กดปุ่มเลือกช่อง: {i}");
             }
         }
     }
 
-    void UpdateSelectorUI()
+    // ฟังก์ชันรีเฟรชมือ (เรียกเมื่อของในกระเป๋าเปลี่ยน)
+    void RefreshHand()
     {
-        // ย้ายกรอบ Selector ไปบังช่องที่เลือก
-        if (slotParent.childCount > selectedSlot)
+        // Debug.Log("มีการขยับของในกระเป๋า! กำลังเช็คของในมือ..."); 
+
+        if (currentSlotIndex >= 0)
         {
-            Transform targetSlot = slotParent.GetChild(selectedSlot);
-            selector.position = targetSlot.position;
+            EquipBySlotIndex(currentSlotIndex);
         }
     }
 
-    void AutoEquip()
+    void EquipBySlotIndex(int index)
     {
-        // เช็คว่าในช่องที่เลือกมีของอยู่จริงไหม
-        if (selectedSlot < inventory.items.Count)
+        // ป้องกัน Error กรณี Index เกินจำนวนช่อง
+        if (index >= inventory.items.Count) return;
+
+        // เช็คว่าช่องนั้นมีของ และไม่ใช่ช่องว่าง (null)
+        if (inventory.items[index] != null)
         {
-            inventory.EquipItem(inventory.items[selectedSlot].itemData);
+            // มีของ -> สั่งถือ
+            inventory.EquipItem(inventory.items[index].itemData);
         }
         else
         {
-            inventory.Unequip(); // ถ้าช่องว่าง ให้เอามือเปล่า
+            // ของหาย / เป็นช่องว่าง -> เก็บมือ
+            inventory.Unequip();
+            // Debug.Log($"ช่อง {index} ว่างเปล่า -> เก็บมือ");
         }
     }
 }

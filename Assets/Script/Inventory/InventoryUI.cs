@@ -4,8 +4,6 @@ public class InventoryUI : MonoBehaviour
 {
     [Header("UI References")]
     public GameObject inventoryPanel;
-
-    [Header("Slot Parents")]
     public Transform hotbarGrid;
     public Transform backpackGrid;
 
@@ -29,20 +27,19 @@ public class InventoryUI : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.I))
         {
-            if (inventoryPanel != null)
-                inventoryPanel.SetActive(!inventoryPanel.activeSelf);
+            if (inventoryPanel != null) inventoryPanel.SetActive(!inventoryPanel.activeSelf);
         }
     }
 
     void UpdateUI()
     {
-        // 1. อัปเดต Hotbar
+        // 1. Hotbar Loop
         for (int i = 0; i < hotbarSlots.Length; i++)
         {
-            // ⭐ บอกเลขที่แท้จริง
             hotbarSlots[i].slotIndex = i;
 
-            if (i < inventory.items.Count)
+            // ⭐ เช็คเพิ่มว่า: ช่องนี้มีข้อมูล และ "ไม่ใช่ null"
+            if (i < inventory.items.Count && inventory.items[i] != null)
             {
                 hotbarSlots[i].AddItem(inventory.items[i].itemData, inventory.items[i].amount, true);
             }
@@ -52,17 +49,16 @@ public class InventoryUI : MonoBehaviour
             }
         }
 
-        // 2. อัปเดต Backpack
+        // 2. Backpack Loop
         for (int i = 0; i < backpackSlots.Length; i++)
         {
-            int inventoryIndex = i + hotbarSlots.Length; // คำนวณเลขที่แท้จริง
+            int slotIdx = i + hotbarSlots.Length;
+            backpackSlots[i].slotIndex = slotIdx;
 
-            // ⭐ บอกเลขที่แท้จริง
-            backpackSlots[i].slotIndex = inventoryIndex;
-
-            if (inventoryIndex < inventory.items.Count)
+            // ⭐ เช็ค null เหมือนกัน
+            if (slotIdx < inventory.items.Count && inventory.items[slotIdx] != null)
             {
-                backpackSlots[i].AddItem(inventory.items[inventoryIndex].itemData, inventory.items[inventoryIndex].amount, false);
+                backpackSlots[i].AddItem(inventory.items[slotIdx].itemData, inventory.items[slotIdx].amount, false);
             }
             else
             {

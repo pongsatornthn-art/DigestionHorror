@@ -14,3 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: GoodBlade
   icon: {fileID: 6963189167691985614, guid: b0da42f03e7cf9c4c9604402a170ad44, type: 3}
+  isStackable: 1
+  maxStack: 1
+  equippedSprite: {fileID: 6963189167691985614, guid: b0da42f03e7cf9c4c9604402a170ad44, type: 3}

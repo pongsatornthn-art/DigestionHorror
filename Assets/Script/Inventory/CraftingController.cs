@@ -3,23 +3,26 @@ using System.Collections.Generic;
 
 public class CraftingController : MonoBehaviour
 {
-    // สร้างลิสต์รายการสูตร เอาไว้ใส่ใน Inspector
+    // ลิสต์รายการสูตร (ลากใส่ใน Inspector เหมือนเดิม)
     public List<CraftingRecipe> recipes;
 
     void Update()
     {
-        // กดปุ่มเลข 1, 2, 3 เพื่อสั่งคราฟต์ตามลำดับ
-        if (Input.GetKeyDown(KeyCode.Alpha1)) CraftItem(0);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) CraftItem(1);
-        if (Input.GetKeyDown(KeyCode.Alpha3)) CraftItem(2);
+        // เปลี่ยนเป็นเช็คปุ่ม C ปุ่มเดียว
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            TryCraftAll();
+        }
     }
 
-    void CraftItem(int index)
+    void TryCraftAll()
     {
-        // เช็คว่ามีสูตรนี้จริงไหม (กัน Error)
-        if (index < recipes.Count)
+        // วนลูปเช็ค "ทุกสูตร" ที่มีในลิสต์ recipes
+        foreach (var recipe in recipes)
         {
-            CraftingSystem.instance.Craft(recipes[index]);
+            // ส่งสูตรไปให้ระบบหลักจัดการ
+            // (ในระบบหลัก มันมีตัวเช็คของอยู่แล้ว ถ้าของไม่พอ มันจะข้ามไปเอง ไม่ Error ครับ)
+            CraftingSystem.instance.Craft(recipe);
         }
     }
 }
