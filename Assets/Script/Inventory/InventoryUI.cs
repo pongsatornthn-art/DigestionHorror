@@ -2,47 +2,71 @@
 
 public class InventoryUI : MonoBehaviour
 {
-    public Transform itemsParent;   // ลาก Grid มาใส่ตรงนี้
-    public GameObject inventoryUI;  // ลากหน้าต่าง UI มาใส่ตรงนี้ (เพื่อเปิด/ปิด)
+    [Header("UI References")]
+    public GameObject inventoryPanel;
+
+    [Header("Slot Parents")]
+    public Transform hotbarGrid;
+    public Transform backpackGrid;
 
     Inventory inventory;
-    InventorySlot[] slots;
+    InventorySlot[] hotbarSlots;
+    InventorySlot[] backpackSlots;
 
     void Start()
     {
         inventory = Inventory.instance;
         inventory.onItemChangedCallback += UpdateUI;
 
-        // ดึงปุ่มลูกๆ ทั้งหมดมาเก็บไว้ในลิสต์
-        slots = itemsParent.GetComponentsInChildren<InventorySlot>();
+        hotbarSlots = hotbarGrid.GetComponentsInChildren<InventorySlot>();
+        backpackSlots = backpackGrid.GetComponentsInChildren<InventorySlot>();
 
-        // ✅ [สำคัญ] สั่งให้อัปเดตหน้าจอทันที 1 ครั้งตอนเริ่มเกม
-        // เพื่อให้ของที่เราใส่ไว้ใน Inspector มันโชว์ขึ้นมาเลย
         UpdateUI();
+        if (inventoryPanel != null) inventoryPanel.SetActive(false);
     }
 
     void Update()
     {
-        // กดปุ่ม I เพื่อเปิด/ปิดกระเป๋า
         if (Input.GetKeyDown(KeyCode.I))
         {
-            inventoryUI.SetActive(!inventoryUI.activeSelf);
+            if (inventoryPanel != null)
+                inventoryPanel.SetActive(!inventoryPanel.activeSelf);
         }
     }
 
     void UpdateUI()
     {
-        for (int i = 0; i < slots.Length; i++)
+        // 1. อัปเดต Hotbar
+        for (int i = 0; i < hotbarSlots.Length; i++)
         {
+            // ⭐ บอกเลขที่แท้จริง
+            hotbarSlots[i].slotIndex = i;
+
             if (i < inventory.items.Count)
             {
-                // ถ้ามีของ -> เอารูปมาใส่
-                slots[i].AddItem(inventory.items[i]);
+                hotbarSlots[i].AddItem(inventory.items[i].itemData, inventory.items[i].amount, true);
             }
             else
             {
-                // ถ้าไม่มีของ -> เคลียร์ช่องให้ว่าง
-                slots[i].ClearSlot();
+                hotbarSlots[i].ClearSlot();
+            }
+        }
+
+        // 2. อัปเดต Backpack
+        for (int i = 0; i < backpackSlots.Length; i++)
+        {
+            int inventoryIndex = i + hotbarSlots.Length; // คำนวณเลขที่แท้จริง
+
+            // ⭐ บอกเลขที่แท้จริง
+            backpackSlots[i].slotIndex = inventoryIndex;
+
+            if (inventoryIndex < inventory.items.Count)
+            {
+                backpackSlots[i].AddItem(inventory.items[inventoryIndex].itemData, inventory.items[inventoryIndex].amount, false);
+            }
+            else
+            {
+                backpackSlots[i].ClearSlot();
             }
         }
     }

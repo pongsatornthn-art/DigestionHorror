@@ -1,30 +1,50 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class InventorySlot : MonoBehaviour
 {
     public Image icon;
-    ItemData item; // เก็บข้อมูลไอเท็มในช่องนี้
+    public TextMeshProUGUI amountText;
 
-    public void AddItem(ItemData newItem)
+    // ⭐ เพิ่มบรรทัดนี้: เก็บเลขดัชนีที่แท้จริง
+    [HideInInspector] public int slotIndex;
+
+    ItemData item;
+    bool canEquip;
+
+    public void AddItem(ItemData newItem, int amount, bool isHotbar)
     {
         item = newItem;
+        canEquip = isHotbar;
         icon.sprite = item.icon;
+
+        // ทำให้มองเห็นเพื่อรองรับการลาก
+        icon.color = Color.white;
         icon.enabled = true;
+
+        if (amountText != null)
+        {
+            amountText.text = amount > 1 ? amount.ToString() : "";
+            amountText.enabled = amount > 1;
+        }
     }
 
     public void ClearSlot()
     {
         item = null;
+        // ทำเป็นใสๆ เพื่อรอรับของ
         icon.sprite = null;
-        icon.enabled = false;
+        icon.color = Color.clear;
+        icon.enabled = true;
+
+        if (amountText != null) amountText.enabled = false;
+        canEquip = false;
     }
 
-    // --- ส่วนที่เพิ่มมาใหม่ (กดปุ่มเพื่อใช้) ---
-    // ฟังก์ชันนี้จะถูกเรียกเมื่อเรากดปุ่ม UI
     public void OnUseButton()
     {
-        if (item != null)
+        if (item != null && canEquip)
         {
             Inventory.instance.EquipItem(item);
         }
