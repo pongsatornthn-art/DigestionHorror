@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: RustyBlade
   icon: {fileID: -1710013987460863490, guid: f10d38366d3086441b8d6e4fa4b47c6e, type: 3}
+  descriptionImage: {fileID: 488127137033228524, guid: 584673e5ac33a034eb6099cbc7e7fa20, type: 3}
   isStackable: 1
-  maxStack: 1
+  maxStack: 3
   equippedSprite: {fileID: -1710013987460863490, guid: f10d38366d3086441b8d6e4fa4b47c6e, type: 3}

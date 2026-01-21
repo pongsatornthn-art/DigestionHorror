@@ -25,7 +25,7 @@ public class Inventory : MonoBehaviour
 
     public int space = 30; // จำนวนช่องทั้งหมด
 
-    // ⭐ เปลี่ยนเป็น List ที่มีช่องว่าง (null) รอไว้
+    // List เก็บข้อมูลไอเทม (Data) ไม่ใช่ UI
     public List<InventoryItem> items = new List<InventoryItem>();
 
     [Header("Equipment Settings")]
@@ -37,25 +37,27 @@ public class Inventory : MonoBehaviour
         if (instance != null) return;
         instance = this;
 
-        // ⭐ สร้างช่องว่างรอไว้ให้ครบ 30 ช่อง (กัน Error Index Out of Range)
+        // สร้างช่องว่าง (null) รอไว้ให้ครบ 30 ช่อง เพื่อให้ Swap ได้อิสระ
         while (items.Count < space)
         {
             items.Add(null);
         }
     }
 
+    // ✅ ฟังก์ชัน AddItem ที่ถูกต้อง (จัดการ Data)
     public bool AddItem(ItemData item, int amount = 1)
     {
-        // 1. ลองหาของเดิมเพื่อ Stack (ต้องไม่เป็น null และชื่อตรงกัน)
+        // 1. ลองหาของเดิมเพื่อ Stack (ต้องไม่เป็น null, ชื่อตรงกัน, stackable, และยังไม่เต็ม)
         InventoryItem existingItem = items.Find(i => i != null && i.itemData == item && i.itemData.isStackable && i.amount < i.itemData.maxStack);
 
         if (existingItem != null)
         {
+            // ถ้าเจอของซ้ำ -> บวกจำนวนเพิ่ม
             existingItem.AddAmount(amount);
         }
         else
         {
-            // 2. ถ้าไม่มี ให้หา "ช่องว่างแรก" (ที่เป็น null)
+            // 2. ถ้าไม่มี -> หา "ช่องว่างแรก" (ที่เป็น null)
             int emptyIndex = items.FindIndex(i => i == null);
 
             if (emptyIndex != -1) // ถ้าเจอช่องว่าง
@@ -69,11 +71,12 @@ public class Inventory : MonoBehaviour
             }
         }
 
+        // แจ้งเตือน UI ให้วาดรูปใหม่
         if (onItemChangedCallback != null) onItemChangedCallback.Invoke();
         return true;
     }
 
-    // Overload เผื่อเรียกใช้ง่ายๆ
+    // Overload เผื่อเรียกใช้ง่ายๆ (เช่นเก็บของชิ้นเดียว)
     public bool AddItem(ItemData item) => AddItem(item, 1);
 
     public void RemoveItem(ItemData item)
@@ -89,7 +92,7 @@ public class Inventory : MonoBehaviour
             {
                 if (currentEquippedItem == item) Unequip();
 
-                // ⭐ แทนที่จะลบแถวทิ้ง ให้เปลี่ยนเป็น null (ช่องว่าง) แทน
+                // เปลี่ยนช่องนั้นกลับเป็น null (ว่าง)
                 items[itemIndex] = null;
             }
 
@@ -118,10 +121,10 @@ public class Inventory : MonoBehaviour
         if (handRenderer != null) handRenderer.enabled = false;
     }
 
-    // ⭐ ฟังก์ชันสลับของ (พระเอกของเรา)
+    // ฟังก์ชันสลับของ (Logic)
     public void SwapItems(int indexA, int indexB)
     {
-        // เช็คแค่ว่า Index อยู่ในขอบเขต 0-29 ไหม (ไม่ต้องสนว่ามีของไหม)
+        // เช็คแค่ว่า Index อยู่ในขอบเขต 0-29 ไหม
         if (indexA >= 0 && indexA < space && indexB >= 0 && indexB < space)
         {
             InventoryItem temp = items[indexA];

@@ -16,10 +16,13 @@ public class InventoryUI : MonoBehaviour
         inventory = Inventory.instance;
         inventory.onItemChangedCallback += UpdateUI;
 
+        // ดึง Slot ทั้งหมดมาจากลูกของ Grid
         hotbarSlots = hotbarGrid.GetComponentsInChildren<InventorySlot>();
         backpackSlots = backpackGrid.GetComponentsInChildren<InventorySlot>();
 
         UpdateUI();
+
+        // เริ่มเกมมาให้ปิดกระเป๋าก่อน
         if (inventoryPanel != null) inventoryPanel.SetActive(false);
     }
 
@@ -33,14 +36,17 @@ public class InventoryUI : MonoBehaviour
 
     void UpdateUI()
     {
-        // 1. Hotbar Loop
+        // ============================================
+        // ส่วนที่ 1: จัดการ Hotbar (ช่อง 0 ถึง 9)
+        // ============================================
         for (int i = 0; i < hotbarSlots.Length; i++)
         {
             hotbarSlots[i].slotIndex = i;
 
-            // ⭐ เช็คเพิ่มว่า: ช่องนี้มีข้อมูล และ "ไม่ใช่ null"
+            // เช็คว่ามีของใน Data และต้องไม่เป็นช่องว่าง (null)
             if (i < inventory.items.Count && inventory.items[i] != null)
             {
+                // ⭐ ส่ง "จำนวน" (amount) ไปด้วย เพื่อให้เลขขึ้น
                 hotbarSlots[i].AddItem(inventory.items[i].itemData, inventory.items[i].amount, true);
             }
             else
@@ -49,15 +55,20 @@ public class InventoryUI : MonoBehaviour
             }
         }
 
-        // 2. Backpack Loop
+        // ============================================
+        // ส่วนที่ 2: จัดการ Backpack (ช่อง 10 ขึ้นไป)
+        // ============================================
         for (int i = 0; i < backpackSlots.Length; i++)
         {
+            // คำนวณ Index จริง: เริ่มต่อจาก Hotbar
             int slotIdx = i + hotbarSlots.Length;
+
             backpackSlots[i].slotIndex = slotIdx;
 
-            // ⭐ เช็ค null เหมือนกัน
+            // เช็คว่ามีของใน Data และต้องไม่เป็นช่องว่าง (null)
             if (slotIdx < inventory.items.Count && inventory.items[slotIdx] != null)
             {
+                // ⭐ ส่ง "จำนวน" (amount) ไปด้วย
                 backpackSlots[i].AddItem(inventory.items[slotIdx].itemData, inventory.items[slotIdx].amount, false);
             }
             else

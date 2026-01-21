@@ -1,28 +1,53 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems; // ต้องมีบรรทัดนี้
 
-public class InventorySlot : MonoBehaviour
+public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     public Image icon;
     public TextMeshProUGUI amountText;
 
-    // เก็บเลขดัชนีที่แท้จริง
     [HideInInspector] public int slotIndex;
 
-    // เปลี่ยนเป็น public เพื่อให้ ItemDrag มองเห็นได้ง่ายๆ
     public ItemData item;
-
     bool canEquip;
 
-    void Start()
+    // ❌ ลบ Start() ที่ไปปิด Raycast ออก เพื่อให้ลากของได้ปกติครับ
+
+    // ==========================================
+    // ⭐ ส่วนตรวจสอบเมาส์ (Mouse Hover)
+    // ==========================================
+
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        // ⭐ เพิ่มส่วนนี้: บังคับเปิดการมองเห็นของเมาส์ผ่านโค้ดเลย (กันลืมติ๊กใน Inspector)
-        if (icon != null)
+        // 1. ค้นหาว่าหน้า InventoryPanel เปิดอยู่ไหม?
+        GameObject inventoryPanel = GameObject.Find("InventoryPanel");
+
+        // ถ้าหาไม่เจอ หรือ มันปิดอยู่ -> ไม่ต้องโชว์รูป
+        if (inventoryPanel != null && !inventoryPanel.activeInHierarchy)
         {
-            icon.raycastTarget = true;
+            return;
+        }
+
+        // 2. ถ้ากระเป๋าเปิดอยู่ ค่อยโชว์รูป
+        if (item != null && item.descriptionImage != null && ItemTooltipImage.instance != null)
+        {
+            ItemTooltipImage.instance.ShowDescriptionImage(item.descriptionImage);
         }
     }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (ItemTooltipImage.instance != null)
+        {
+            ItemTooltipImage.instance.ClearDescriptionImage();
+        }
+    }
+
+    // ==========================================
+    // ส่วนฟังก์ชันจัดการไอเทม
+    // ==========================================
 
     public void AddItem(ItemData newItem, int amount, bool isHotbar)
     {
@@ -30,10 +55,8 @@ public class InventorySlot : MonoBehaviour
         canEquip = isHotbar;
 
         icon.sprite = item.icon;
-
-        // ทำให้มองเห็นรูปไอเท็มชัดเจน
         icon.color = Color.white;
-        icon.enabled = true;
+        icon.enabled = true; // เปิดให้มองเห็นและลากได้
 
         if (amountText != null)
         {
@@ -46,13 +69,18 @@ public class InventorySlot : MonoBehaviour
     {
         item = null;
 
-        // ⭐ จุดสำคัญ: ทำให้เป็นสีใส แต่ยังเปิด enabled ไว้ เพื่อให้เมาส์วางของใส่ช่องว่างได้
         icon.sprite = null;
         icon.color = Color.clear;
-        icon.enabled = true;
+        icon.enabled = true; // เปิดไว้เพื่อรับของ (Drop Area)
 
         if (amountText != null) amountText.enabled = false;
         canEquip = false;
+
+        // กันเหนียว: ถ้าของหายไปขณะเมาส์ชี้อยู่ ให้เอารูปออกด้วย
+        if (ItemTooltipImage.instance != null)
+        {
+            ItemTooltipImage.instance.ClearDescriptionImage();
+        }
     }
 
     public void OnUseButton()

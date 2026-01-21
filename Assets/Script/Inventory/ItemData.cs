@@ -4,10 +4,12 @@
 public class ItemData : ScriptableObject
 {
     public string itemName = "New Item";
-    public Sprite icon;              // รูปในกระเป๋า (UI)
+    public Sprite icon;              // รูปไอคอนเล็กๆ ในช่องเก็บของ
 
-    // ⭐ ส่วนที่ Error บอกว่าขาดไป (ต้องเพิ่มเข้ามาครับ)
-    public bool isStackable = true;  // เก็บซ้อนกันได้ไหม?
-    public int maxStack = 99;        // ซ้อนได้สูงสุดเท่าไหร่?
-    public Sprite equippedSprite;    // รูปตอนถือในฉากเกม
+    // ⭐ เพิ่มบรรทัดนี้: เอารูปใหญ่ๆ ที่เป็นคำอธิบายมาใส่ช่องนี้
+    public Sprite descriptionImage;
+
+    public bool isStackable = true;
+    public int maxStack = 99;
+    public Sprite equippedSprite;
 }
