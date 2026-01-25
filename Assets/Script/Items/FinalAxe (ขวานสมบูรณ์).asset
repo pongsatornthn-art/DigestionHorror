@@ -14,3 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: 
   icon: {fileID: 0}
+  description: 
+  descriptionImage: {fileID: 0}
+  isStackable: 1
+  maxStack: 99
+  itemType: 0
+  equippedSprite: {fileID: 0}
+  damage: 0
