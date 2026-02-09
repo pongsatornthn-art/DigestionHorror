@@ -3,16 +3,30 @@
 public class EnemyStats : MonoBehaviour
 {
     public int hp = 100;
+    public int damageToPlayer = 10;
 
     public void TakeDamage(int damage)
     {
         hp -= damage;
-        Debug.Log(name + " โดนตี! เลือดเหลือ " + hp);
+        Debug.Log(name + " เลือดเหลือ " + hp);
+        if (hp <= 0) Die();
+    }
 
-        if (hp <= 0)
+    void Die()
+    {
+        Destroy(gameObject);
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
         {
-            Destroy(gameObject); // ตายแล้วลบตัวเองทิ้ง
-            // เพิ่ม Effect เสียง/ระเบิด ตรงนี้ได้
+            PlayerController player = collision.gameObject.GetComponent<PlayerController>();
+            if (player != null)
+            {
+                // เรียกใช้ฟังก์ชันที่เราเพิ่มใน PlayerController แล้ว
+                player.PlayerTakeDamage(damageToPlayer);
+            }
         }
     }
 }
