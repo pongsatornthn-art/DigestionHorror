@@ -1,19 +1,25 @@
 fileFormatVersion: 2
-guid: 3a5df8c9c04c72149a8b9cc73093f82d
+guid: 699a819c16b5da44da2c21a02ba70c69
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -9154062717257172172
-    second: Beta_Walk_Down_0
+      213: 5921444538186595469
+    second: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_0"
   - first:
-      213: -4020900900136742184
-    second: Beta_Walk_Down_1
+      213: 6843078494586764445
+    second: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_1"
   - first:
-      213: -6392728850899331986
-    second: Beta_Walk_Down_2
+      213: -1055846541931759466
+    second: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_2"
   - first:
-      213: 3940747254128063072
-    second: Beta_Walk_Down_3
+      213: 767084601100081388
+    second: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_3"
+  - first:
+      213: 2646624805742255937
+    second: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_4"
+  - first:
+      213: -1471695453584890440
+    second: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_5"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -109,89 +115,133 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Beta_Walk_Down_0
+      name: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_0"
       rect:
         serializedVersion: 2
-        x: 21
+        x: 11
         y: 16
-        width: 22
-        height: 17
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 41
+        height: 43
+      alignment: 9
+      pivot: {x: 0.5121951, y: 0.20930232}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 43b3d3e757c36f080800000000000000
-      internalID: -9154062717257172172
+      spriteID: d8cf9cf2f623d2250800000000000000
+      internalID: 5921444538186595469
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Beta_Walk_Down_1
+      name: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_1"
       rect:
         serializedVersion: 2
-        x: 85
-        y: 1
-        width: 22
-        height: 47
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 8d21d4a5fe3e238c0800000000000000
-      internalID: -4020900900136742184
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Beta_Walk_Down_2
-      rect:
-        serializedVersion: 2
-        x: 149
-        y: 1
-        width: 22
-        height: 47
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: e6411c0faf67847a0800000000000000
-      internalID: -6392728850899331986
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Beta_Walk_Down_3
-      rect:
-        serializedVersion: 2
-        x: 213
+        x: 75
         y: 16
-        width: 22
-        height: 17
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 41
+        height: 48
+      alignment: 9
+      pivot: {x: 0.5121951, y: 0.1875}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 06236e7afb850b630800000000000000
-      internalID: 3940747254128063072
+      spriteID: d9c75f772af77fe50800000000000000
+      internalID: 6843078494586764445
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_2"
+      rect:
+        serializedVersion: 2
+        x: 139
+        y: 16
+        width: 42
+        height: 48
+      alignment: 9
+      pivot: {x: 0.5, y: 0.1875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 69835da0a21e851f0800000000000000
+      internalID: -1055846541931759466
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_3"
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 52
+        width: 15
+        height: 12
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce81e39616b35aa00800000000000000
+      internalID: 767084601100081388
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_4"
+      rect:
+        serializedVersion: 2
+        x: 175
+        y: 54
+        width: 10
+        height: 6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14f11080d33bab420800000000000000
+      internalID: 2646624805742255937
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_5"
+      rect:
+        serializedVersion: 2
+        x: 203
+        y: 16
+        width: 41
+        height: 43
+      alignment: 9
+      pivot: {x: 0.5121951, y: 0.20930232}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b5e38748cc739be0800000000000000
+      internalID: -1471695453584890440
       vertices: []
       indices: 
       edges: []
@@ -200,7 +250,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 565a1b73575cabe4b82d4cc9c71e5384
     internalID: 0
     vertices: []
     indices: 
@@ -210,10 +260,12 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Beta_Walk_Down_0: -9154062717257172172
-      Beta_Walk_Down_1: -4020900900136742184
-      Beta_Walk_Down_2: -6392728850899331986
-      Beta_Walk_Down_3: 3940747254128063072
+      "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_0": 5921444538186595469
+      "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_1": 6843078494586764445
+      "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_2": -1055846541931759466
+      "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_3": 767084601100081388
+      "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_4": 2646624805742255937
+      "\u0E15\u0E35\u0E40\u0E1A\u0E32 (1)_5": -1471695453584890440
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

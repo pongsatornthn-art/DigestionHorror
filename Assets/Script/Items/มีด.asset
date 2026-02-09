@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f363b3cc3d5c1b3458c8457fe9ddbae4, type: 3}
-  m_Name: "FinalAxe (\u0E02\u0E27\u0E32\u0E19\u0E2A\u0E21\u0E1A\u0E39\u0E23\u0E13\u0E4C)"
+  m_Name: "\u0E21\u0E35\u0E14"
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: 
-  icon: {fileID: 0}
+  itemName: "\u0E21\u0E35\u0E14"
+  icon: {fileID: -25296008638364050, guid: eaff258778bc3da4ba33b84051ec9dbd, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: -25296008638364050, guid: eaff258778bc3da4ba33b84051ec9dbd, type: 3}
   isStackable: 1
-  maxStack: 99
+  maxStack: 1
   itemType: 1
   equippedSprite: {fileID: 0}
   weaponID: 0
-  damage: 0
-  staminaCost: 10
+  damage: 10
+  staminaCost: 0
   knockback: 3
   heavyDamage: 20
-  heavyStaminaCost: 25
+  heavyStaminaCost: 0
   heavyKnockback: 6

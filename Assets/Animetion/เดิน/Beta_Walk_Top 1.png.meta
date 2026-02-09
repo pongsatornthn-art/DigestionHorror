@@ -1,19 +1,19 @@
 fileFormatVersion: 2
-guid: 3a5df8c9c04c72149a8b9cc73093f82d
+guid: 7e71441f2206ee048bf1695db05a7bb1
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -9154062717257172172
-    second: Beta_Walk_Down_0
+      213: -6123660458158526705
+    second: Beta_Walk_Top 1_0
   - first:
-      213: -4020900900136742184
-    second: Beta_Walk_Down_1
+      213: 2289916090428033929
+    second: Beta_Walk_Top 1_1
   - first:
-      213: -6392728850899331986
-    second: Beta_Walk_Down_2
+      213: 821419501518263066
+    second: Beta_Walk_Top 1_2
   - first:
-      213: 3940747254128063072
-    second: Beta_Walk_Down_3
+      213: -9003381014627150212
+    second: Beta_Walk_Top 1_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -109,13 +109,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Beta_Walk_Down_0
+      name: Beta_Walk_Top 1_0
       rect:
         serializedVersion: 2
-        x: 21
+        x: 12
         y: 16
-        width: 22
-        height: 17
+        width: 40
+        height: 26
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 43b3d3e757c36f080800000000000000
-      internalID: -9154062717257172172
+      spriteID: f0fea520243640ba0800000000000000
+      internalID: -6123660458158526705
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Beta_Walk_Down_1
+      name: Beta_Walk_Top 1_1
       rect:
         serializedVersion: 2
-        x: 85
-        y: 1
-        width: 22
-        height: 47
+        x: 73
+        y: 6
+        width: 45
+        height: 36
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -146,20 +146,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 8d21d4a5fe3e238c0800000000000000
-      internalID: -4020900900136742184
+      spriteID: 98b0a6f3d8a67cf10800000000000000
+      internalID: 2289916090428033929
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Beta_Walk_Down_2
+      name: Beta_Walk_Top 1_2
       rect:
         serializedVersion: 2
-        x: 149
-        y: 1
-        width: 22
-        height: 47
+        x: 138
+        y: 6
+        width: 45
+        height: 36
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -168,20 +168,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e6411c0faf67847a0800000000000000
-      internalID: -6392728850899331986
+      spriteID: a13139f3fa4466b00800000000000000
+      internalID: 821419501518263066
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Beta_Walk_Down_3
+      name: Beta_Walk_Top 1_3
       rect:
         serializedVersion: 2
-        x: 213
+        x: 204
         y: 16
-        width: 22
-        height: 17
+        width: 40
+        height: 26
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -190,8 +190,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 06236e7afb850b630800000000000000
-      internalID: 3940747254128063072
+      spriteID: c7617ad4ba09d0380800000000000000
+      internalID: -9003381014627150212
       vertices: []
       indices: 
       edges: []
@@ -210,10 +210,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Beta_Walk_Down_0: -9154062717257172172
-      Beta_Walk_Down_1: -4020900900136742184
-      Beta_Walk_Down_2: -6392728850899331986
-      Beta_Walk_Down_3: 3940747254128063072
+      Beta_Walk_Top 1_0: -6123660458158526705
+      Beta_Walk_Top 1_1: 2289916090428033929
+      Beta_Walk_Top 1_2: 821419501518263066
+      Beta_Walk_Top 1_3: -9003381014627150212
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
