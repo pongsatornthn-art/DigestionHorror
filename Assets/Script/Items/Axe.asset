@@ -10,20 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f363b3cc3d5c1b3458c8457fe9ddbae4, type: 3}
-  m_Name: "\u0E21\u0E35\u0E14"
+  m_Name: Axe
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: "\u0E21\u0E35\u0E14"
-  icon: {fileID: -25296008638364050, guid: eaff258778bc3da4ba33b84051ec9dbd, type: 3}
+  itemName: Axe
+  icon: {fileID: -8864645360043674332, guid: 0fef8b29c975179499ebeebdf1088a05, type: 3}
   description: 
-  descriptionImage: {fileID: -25296008638364050, guid: eaff258778bc3da4ba33b84051ec9dbd, type: 3}
+  descriptionImage: {fileID: -8864645360043674332, guid: 0fef8b29c975179499ebeebdf1088a05, type: 3}
   isStackable: 1
   maxStack: 1
   itemType: 1
-  equippedSprite: {fileID: 0}
+  equippedSprite: {fileID: -4236265926368651260, guid: e22773ddfb52dd64cb78c2b3279782d7, type: 3}
+  weaponAnimatorOverride: {fileID: 0}
   weaponID: 0
   damage: 10
-  staminaCost: 0
+  staminaCost: 10
   knockback: 3
   heavyDamage: 20
-  heavyStaminaCost: 0
+  heavyStaminaCost: 25
   heavyKnockback: 6
