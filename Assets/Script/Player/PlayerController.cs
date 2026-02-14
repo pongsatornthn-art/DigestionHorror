@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -14,7 +15,6 @@ public class PlayerController : MonoBehaviour
     private Animator legAnim;
 
     [Header("Separate Weapon System")]
-    // ลาก GameObject หุ่นแต่ละตัวจาก Hierarchy มาใส่ที่นี่ (ต้องลากมาใส่ให้ครบนะ!)
     public GameObject knifeHolder;
     public GameObject axeHolder;
     public GameObject nailStickHolder;
@@ -49,7 +49,8 @@ public class PlayerController : MonoBehaviour
     public float attackRate = 2f;
     private float nextAttackTime = 0f;
 
-    [Header("Sound")]
+    [Header("Game Over & Sound")]
+    public GameObject gameOverPanel;
     public AudioSource audioSource;
     public AudioClip swingSound;
     public AudioClip hitSound;
@@ -64,17 +65,20 @@ public class PlayerController : MonoBehaviour
 
         currentHealth = maxHealth;
         currentStamina = maxStamina;
-        if (hpSlider) hpSlider.maxValue = maxHealth;
-        if (staminaSlider) staminaSlider.maxValue = maxStamina;
 
-        // เริ่มเกมมาเช็คอาวุธทันที
+        // ✅ แก้ไข: ไม่ต้องตั้งค่า maxValue ในโค้ด เพราะเราตั้งใน Inspector เป็น 1 แล้ว
+        UpdateUI();
+
+        Time.timeScale = 1f;
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
         EquipWeapon(currentWeapon);
     }
 
     void Update()
     {
         HandleInput();
-        UpdateUI();
+        UpdateUI(); // ✅ บังคับอัพเดท UI ทุกเฟรมเพื่อให้หลอดลื่นไหล
         HandleCombatInput();
         UpdateAnimationParams();
     }
@@ -122,11 +126,8 @@ public class PlayerController : MonoBehaviour
         Vector2 lookDir = mousePos - rb.position;
         float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
 
-        // หุ่นที่ถืออยู่ต้องหันตามเมาส์
         if (currentActiveHolder != null)
-        {
             currentActiveHolder.transform.rotation = Quaternion.Euler(0, 0, angle);
-        }
 
         if (bodyTransform != null) bodyTransform.rotation = Quaternion.Euler(0, 0, angle);
 
@@ -137,12 +138,10 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // ⭐ ฟังก์ชันสลับหุ่น: แก้ไขให้เช็คชื่อได้แม่นยำขึ้น
     public void EquipWeapon(ItemData newItem)
     {
         currentWeapon = newItem;
 
-        // 1. ปิดตาทุกหุ่นอาวุธก่อน (ล้างกระดาน)
         if (knifeHolder) knifeHolder.SetActive(false);
         if (axeHolder) axeHolder.SetActive(false);
         if (nailStickHolder) nailStickHolder.SetActive(false);
@@ -150,27 +149,18 @@ public class PlayerController : MonoBehaviour
 
         if (newItem == null || newItem.itemType != ItemType.Weapon)
         {
-            // กรณี "มือเปล่า": เปิดตาตัวละครหลัก และปิดหุ่นอาวุธ
             if (bodyTransform != null) bodyTransform.gameObject.SetActive(true);
-            Debug.Log("โหมดมือเปล่า: เปิดตาตัวละครหลัก");
             return;
         }
 
-        // 2. เช็คชื่ออาวุธเพื่อเลือกหุ่นที่จะเปิด
         if (newItem.itemName == "Knife") currentActiveHolder = knifeHolder;
         else if (newItem.itemName == "Axe") currentActiveHolder = axeHolder;
         else if (newItem.itemName == "NailStick") currentActiveHolder = nailStickHolder;
 
-        // 3. จัดการสลับการมองเห็น (Toggle Visibility)
         if (currentActiveHolder != null)
         {
-            // ❌ ปิดตาตัวละครหลัก (bodyTransform) เพื่อไม่ให้ซ้อน
             if (bodyTransform != null) bodyTransform.gameObject.SetActive(false);
-
-            // ✅ เปิดตาหุ่นอาวุธตัวที่เลือกแทน
             currentActiveHolder.SetActive(true);
-
-            Debug.Log("สวมใส่ " + newItem.itemName + ": ปิดตาตัวละครหลัก และใช้หุ่นอาวุธแทน");
         }
     }
 
@@ -201,35 +191,62 @@ public class PlayerController : MonoBehaviour
 
     public void DealDamage()
     {
-        if (attackPoint == null || currentActiveHolder == null) return;
+        if (attackPoint == null || currentActiveHolder == null || currentWeapon == null) return;
 
         float zAngle = currentActiveHolder.transform.eulerAngles.z;
         Collider2D[] hitEnemies = Physics2D.OverlapBoxAll(attackPoint.position, attackBoxSize, zAngle, enemyLayers);
 
+        float currentKnockback = (pendingDamage == currentWeapon.damage) ? currentWeapon.knockback : currentWeapon.heavyKnockback;
+
         foreach (Collider2D enemy in hitEnemies)
         {
             EnemyStats enemyStats = enemy.GetComponent<EnemyStats>();
-            if (enemyStats != null) enemyStats.TakeDamage(pendingDamage);
+            if (enemyStats != null)
+            {
+                Vector2 knockbackDir = (enemy.transform.position - transform.position).normalized;
+                enemyStats.TakeDamage(pendingDamage, currentKnockback, knockbackDir);
+            }
         }
     }
 
     void UpdateUI()
     {
-        if (hpSlider) hpSlider.value = currentHealth;
-        if (staminaSlider) staminaSlider.value = currentStamina;
+        // ✅ แก้ไข: ใช้สูตรหารทศนิยมเพื่อให้ Slider ที่มี Max 1 ทำงานได้
+        if (hpSlider != null)
+            hpSlider.value = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0;
+
+        if (staminaSlider != null)
+            staminaSlider.value = (maxStamina > 0) ? currentStamina / maxStamina : 0;
     }
 
     public void PlayerTakeDamage(int dmg)
     {
         currentHealth = Mathf.Max(0, currentHealth - dmg);
-        if (hpSlider) hpSlider.value = currentHealth;
+
+        UpdateUI(); // ✅ สั่งอัพเดทหลอดเลือดทันทีที่โดนตี
+
+        if (DigestionSystem.instance != null)
+            DigestionSystem.instance.IncreaseDigestion(5f);
+
         if (currentHealth <= 0) Die();
     }
 
     void Die()
     {
-        if (currentActiveHolder != null) currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
+        Debug.Log("Game Over!");
+        if (currentActiveHolder != null)
+            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
+
+        Time.timeScale = 0f;
+        if (gameOverPanel != null) gameOverPanel.SetActive(true);
+
         this.enabled = false;
+    }
+
+    public void RestartGame()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     void OnDrawGizmos()

@@ -25,7 +25,6 @@ public class Inventory : MonoBehaviour
 
     public int space = 30; // จำนวนช่องทั้งหมด
 
-    // List เก็บข้อมูลไอเทม (Data) ไม่ใช่ UI
     public List<InventoryItem> items = new List<InventoryItem>();
 
     [Header("Equipment Settings")]
@@ -37,7 +36,6 @@ public class Inventory : MonoBehaviour
         if (instance != null) return;
         instance = this;
 
-        // สร้างช่องว่าง (null) รอไว้ให้ครบ 30 ช่อง เพื่อให้ Swap ได้อิสระ
         while (items.Count < space)
         {
             items.Add(null);

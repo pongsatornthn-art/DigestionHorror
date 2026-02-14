@@ -1,82 +1,38 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement; // ✅ ต้องเพิ่มบรรทัดนี้ เพื่อให้โหลดฉากใหม่ได้
 
 public class DigestionSystem : MonoBehaviour
 {
     public static DigestionSystem instance;
 
-    [Header("ค่าการย่อยสลาย (HP)")]
+    [Header("Digestion Stats")]
     public float maxDigestion = 100f;
     public float currentDigestion = 0f;
 
-    [Header("เงื่อนไข: อยู่นิ่งๆ")]
-    public float timeBeforeDigest = 3f;
-    public float digestionRate = 5f;
-    public float moveThreshold = 0.1f;
+    [Header("The Watching Hour Settings")]
+    public bool isWatchingHour = false; // สคริปต์อื่นมาสั่งเปิด-ปิดได้
+    public float watchingHourRate = 2f;  // ค่าย่อยเพิ่มขึ้นวินาทีละเท่าไหร่ตอนอยู่นอกบ้าน
 
     [Header("UI")]
     public Slider digestionSlider;
-    public GameObject gameOverPanel; // ✅ ลากหน้าต่าง Game Over มาใส่ตรงนี้
 
-    private float idleTimer = 0f;
-    private Vector3 lastPosition;
-    private bool isDead = false; // เช็คว่าตายหรือยัง
-
-    void Awake() { instance = this; }
-
-    void Start()
-    {
-        currentDigestion = 0;
-        lastPosition = transform.position;
-        UpdateUI();
-
-        // ซ่อนหน้าต่าง Game Over ตอนเริ่มเกมเสมอ
-        if (gameOverPanel != null) gameOverPanel.SetActive(false);
-
-        // มั่นใจว่าเวลาเดินปกติ (เผื่อตายรอบที่แล้วเวลาหยุดอยู่)
-        Time.timeScale = 1f;
-    }
+    void Awake() => instance = this;
 
     void Update()
     {
-        if (isDead) return; // ถ้าตายแล้ว ไม่ต้องคำนวณอะไรต่อ
-
-        CheckMovement();
-    }
-
-    void CheckMovement()
-    {
-        float distance = Vector3.Distance(transform.position, lastPosition);
-
-        if (distance > moveThreshold)
+        // 1. ถ้าเป็นช่วง Watching Hour และอยู่นอกบ้าน ค่า Digestion จะเพิ่มเรื่อยๆ
+        if (isWatchingHour)
         {
-            idleTimer = 0f;
-            lastPosition = transform.position;
-        }
-        else
-        {
-            idleTimer += Time.deltaTime;
-            if (idleTimer >= timeBeforeDigest)
-            {
-                IncreaseDigestion(digestionRate * Time.deltaTime);
-            }
+            IncreaseDigestion(watchingHourRate * Time.deltaTime);
         }
     }
 
+    // 2. ฟังก์ชันเพิ่มค่า Digestion (เรียกใช้เมื่อโดน Monster ตี หรืออยู่นอกบ้าน)
     public void IncreaseDigestion(float amount)
     {
-        if (isDead) return;
-
         currentDigestion += amount;
         currentDigestion = Mathf.Clamp(currentDigestion, 0, maxDigestion);
-
         UpdateUI();
-
-        if (currentDigestion >= maxDigestion)
-        {
-            Die();
-        }
     }
 
     void UpdateUI()
@@ -87,28 +43,20 @@ public class DigestionSystem : MonoBehaviour
         }
     }
 
-    void Die()
+    public int GetSpawnBonus()
     {
-        isDead = true;
-        Debug.Log("Game Over: คุณถูกหมู่บ้านกลืนกินแล้ว!");
+        float ratio = currentDigestion / maxDigestion; // แปลงเป็น 0.0 - 1.0
 
-        // 1. หยุดเวลาเกม (ทุกอย่างจะหยุดขยับ)
-        Time.timeScale = 0f;
+        if (ratio >= 1.0f) return 7;   // Digestion 100% = +7 ตัว
+        if (ratio >= 0.75f) return 4;  // Digestion 75% = +4 ตัว
+        if (ratio >= 0.5f) return 2;   // Digestion 50% = +2 ตัว
 
-        // 2. เปิดหน้าต่าง Game Over
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(true);
-        }
+        return 0; // ต่ำกว่า 50% ไม่เกิดเพิ่ม
     }
-
-    // ✅ ฟังก์ชันนี้เอาไว้ใส่ในปุ่ม Restart
-    public void RestartGame()
+    public void DecreaseDigestion(float amount)
     {
-        // คืนค่าเวลาให้เดินปกติ
-        Time.timeScale = 1f;
-
-        // โหลดฉากปัจจุบันใหม่ (เริ่มเกมใหม่)
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        currentDigestion -= amount;
+        currentDigestion = Mathf.Clamp(currentDigestion, 0, maxDigestion);
+        UpdateUI();
     }
 }

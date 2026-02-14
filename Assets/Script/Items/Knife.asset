@@ -27,4 +27,4 @@ MonoBehaviour:
   knockback: 3
   heavyDamage: 20
   heavyStaminaCost: 0
-  heavyKnockback: 6
+  heavyKnockback: 5
