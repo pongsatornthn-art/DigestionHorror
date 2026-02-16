@@ -2,64 +2,71 @@
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(CanvasGroup))]
 public class ItemDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
     private Transform originalParent;
-    public InventorySlot mySlot;
+    public InventorySlot mySlot; // ตัวเก็บข้อมูลว่าไอเทมนี้มาจากช่องไหน
 
     void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
+        // ✅ หา Slot ตั้งแต่เกิด
         mySlot = GetComponentInParent<InventorySlot>();
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (GetComponent<Image>().color.a == 0) return;
+        // ✅ ถ้าหา Slot ไม่เจอ ให้รีบค้นหาใหม่ก่อนเริ่มลาก
+        if (mySlot == null) mySlot = GetComponentInParent<InventorySlot>();
 
-        Debug.Log("1. เริ่มลากแล้ว! (OnBeginDrag)"); // ⭐ เช็คจุดที่ 1
+        if (mySlot == null || mySlot.item == null) return;
+
         originalParent = transform.parent;
-        transform.SetParent(transform.root);
-        transform.SetAsLastSibling();
 
-        canvasGroup.blocksRaycasts = false; // ปิดการบัง
-        canvasGroup.alpha = 0.6f;
+        // หา Canvas ตัวแม่สุดเพื่อไม่ให้ไอเทมจม
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas != null)
+        {
+            transform.SetParent(canvas.rootCanvas.transform, true);
+            transform.SetAsLastSibling();
+        }
+
+        canvasGroup.blocksRaycasts = false;
+        canvasGroup.alpha = 0.6f; // ปรับให้จางลงตอนลาก จะได้ดูรู้ว่ากำลังย้าย
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (transform.parent == transform.root)
-            rectTransform.position = Input.mousePosition;
+        rectTransform.position = Input.mousePosition;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        Debug.Log("3. จบการลาก (OnEndDrag)"); // ⭐ เช็คจุดที่ 3
-        transform.SetParent(originalParent);
+        // ✅ กลับไปที่ Slot เดิมเสมอ (เพราะเราคราฟต์แบบมายคราฟ ของจริงต้องยังอยู่ในกระเป๋า)
+        transform.SetParent(originalParent, true);
         rectTransform.localPosition = Vector3.zero;
-        canvasGroup.blocksRaycasts = true; // เปิดการบังคืน
+        canvasGroup.blocksRaycasts = true;
         canvasGroup.alpha = 1f;
 
-        Inventory.instance.onItemChangedCallback.Invoke();
+        if (Inventory.instance != null && Inventory.instance.onItemChangedCallback != null)
+            Inventory.instance.onItemChangedCallback.Invoke();
     }
 
-    // ⭐⭐ ฟังก์ชันนี้สำคัญที่สุดสำหรับการวาง ⭐⭐
+    // ฟังก์ชันสลับของใน Inventory
     public void OnDrop(PointerEventData eventData)
     {
-        Debug.Log("2. วางลงแล้วจ้า! (OnDrop)"); // ⭐ เช็คจุดที่ 2
-
         ItemDrag otherItem = eventData.pointerDrag.GetComponent<ItemDrag>();
-        if (otherItem != null)
+        if (otherItem != null && otherItem != this)
         {
-            InventorySlot sourceSlot = otherItem.mySlot;
-            InventorySlot targetSlot = this.mySlot;
-
-            Debug.Log($"พยายามสลับจากช่อง {sourceSlot.slotIndex} ไปช่อง {targetSlot.slotIndex}");
-
-            Inventory.instance.SwapItems(sourceSlot.slotIndex, targetSlot.slotIndex);
+            if (this.mySlot == null || otherItem.mySlot == null) return;
+            if (Inventory.instance != null)
+            {
+                Inventory.instance.SwapItems(otherItem.mySlot.slotIndex, this.mySlot.slotIndex);
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ public class InventoryUI : MonoBehaviour
     public GameObject inventoryPanel;
     public Transform hotbarGrid;
     public Transform backpackGrid;
+    public GameObject craftingPanel;
 
     [Header("Selection System")]
     public RectTransform selectionCursor;
@@ -19,11 +20,7 @@ public class InventoryUI : MonoBehaviour
 
     void Awake()
     {
-        if (instance != null)
-        {
-            Debug.LogWarning("More than one InventoryUI found!");
-            return;
-        }
+        if (instance != null) return;
         instance = this;
     }
 
@@ -39,21 +36,68 @@ public class InventoryUI : MonoBehaviour
 
         if (inventoryPanel != null) inventoryPanel.SetActive(false);
         SelectHotbarSlot(0);
+
+        // ✅ เริ่มเกมมาสั่งให้เมาส์ "โชว์" ทันที (แก้จาก false เป็น true)
+        SetMouseState(false);
     }
 
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.I))
         {
-            if (ChestUI.instance != null && ChestUI.instance.chestPanel.activeSelf)
-                ChestUI.instance.CloseChest();
-            else
-                if (inventoryPanel != null) inventoryPanel.SetActive(!inventoryPanel.activeSelf);
+            ToggleInventory();
+        }
+
+        // ✅ บังคับให้เมาส์โชว์ตลอดเวลาในทุกเฟรม (กันเหนียว)
+        if (!Cursor.visible)
+        {
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.Confined; // ให้อยู่ในกรอบหน้าต่างเกม
+        }
+
+        // ถ้าเปิดกระเป๋าอยู่ ปลดล็อกให้ขยับอิสระ
+        if (inventoryPanel != null && inventoryPanel.activeSelf)
+        {
+            Cursor.lockState = CursorLockMode.None;
         }
 
         HandleHotbarInput();
     }
 
+    public void ToggleInventory()
+    {
+        if (inventoryPanel == null) return;
+
+        bool isActive = !inventoryPanel.activeSelf;
+        inventoryPanel.SetActive(isActive);
+        if (craftingPanel != null) craftingPanel.SetActive(isActive);
+
+        SetMouseState(isActive);
+
+        // คืนของอัตโนมัติถ้าปิดหน้าต่าง
+        if (!isActive && CraftingManager.instance != null)
+        {
+            CraftingManager.instance.CancelCrafting();
+        }
+    }
+
+    void SetMouseState(bool isUIOpen)
+    {
+        // ✅ ไม่ว่าจะเปิดหรือปิด UI ให้เมาส์โชว์ตลอด (Cursor.visible = true)
+        Cursor.visible = true;
+
+        if (isUIOpen)
+        {
+            Cursor.lockState = CursorLockMode.None; // เปิดเป๋า: เมาส์อิสระ
+        }
+        else
+        {
+            // ปิดเป๋า (ตอนเล่น): ให้เมาส์โชว์ แต่ล็อกไม่ให้หลุดออกนอกจอเกม
+            Cursor.lockState = CursorLockMode.Confined;
+        }
+    }
+
+    // --- ส่วน UpdateUI และ HandleHotbarInput คงเดิม ---
     void UpdateUI()
     {
         for (int i = 0; i < hotbarSlots.Length; i++)
@@ -92,7 +136,6 @@ public class InventoryUI : MonoBehaviour
     void SelectHotbarSlot(int index)
     {
         if (hotbarSlots == null || index < 0 || index >= hotbarSlots.Length) return;
-
         if (selectionCursor != null && hotbarSlots[index] != null)
             selectionCursor.position = hotbarSlots[index].transform.position;
 

@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
+using System;
 
 public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
@@ -12,6 +13,8 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     public ItemData item;
     bool canEquip;
+    internal ItemData itemInSlot;
+    internal int amount;
 
     // ==========================================
     // ⭐ ส่วนตรวจสอบเมาส์ (Mouse Hover)
@@ -103,5 +106,10 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         {
             Inventory.instance.EquipItem(item);
         }
+    }
+
+    internal void UpdateUI()
+    {
+        throw new NotImplementedException();
     }
 }

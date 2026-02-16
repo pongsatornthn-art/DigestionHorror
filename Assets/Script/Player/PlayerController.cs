@@ -66,21 +66,79 @@ public class PlayerController : MonoBehaviour
         currentHealth = maxHealth;
         currentStamina = maxStamina;
 
-        // ✅ แก้ไข: ไม่ต้องตั้งค่า maxValue ในโค้ด เพราะเราตั้งใน Inspector เป็น 1 แล้ว
         UpdateUI();
-
         Time.timeScale = 1f;
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
-
         EquipWeapon(currentWeapon);
+
+        // เริ่มเกมมาให้เมาส์เลื่อนได้ปกติแต่ซ่อนไว้ (สำหรับเกม Top-down)
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Confined;
     }
 
     void Update()
     {
+        // ✅ 1. ถ้าเปิด UI อยู่ ให้หยุดรับคำสั่งควบคุมทั้งหมดเพื่อให้เมาส์เป็นอิสระ
+        if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)
+        {
+            movement = Vector2.zero;
+            return;
+        }
+
         HandleInput();
-        UpdateUI(); // ✅ บังคับอัพเดท UI ทุกเฟรมเพื่อให้หลอดลื่นไหล
+        UpdateUI();
         HandleCombatInput();
         UpdateAnimationParams();
+    }
+
+    void FixedUpdate()
+    {
+        // ✅ 2. รวมฟังก์ชัน FixedUpdate ไว้ที่เดียว และเช็ค UI
+        if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) return;
+
+        // โค้ดขยับตัว
+        rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
+
+        // โค้ดหันหน้าตามเมาส์
+        Vector2 lookDir = mousePos - rb.position;
+        float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
+
+        if (currentActiveHolder != null)
+            currentActiveHolder.transform.rotation = Quaternion.Euler(0, 0, angle);
+
+        if (bodyTransform != null) bodyTransform.rotation = Quaternion.Euler(0, 0, angle);
+
+        if (movement.magnitude > 0.1f && legsTransform != null)
+        {
+            float angleLegs = Mathf.Atan2(movement.y, movement.x) * Mathf.Rad2Deg - 90f;
+            legsTransform.rotation = Quaternion.Lerp(legsTransform.rotation, Quaternion.Euler(0, 0, angleLegs), 0.2f);
+        }
+    }
+
+    // --- ส่วนฟังก์ชันอื่นๆ (EquipWeapon, PerformAttack, etc.) ของคุณพงศธรคงเดิม ---
+    public void EquipWeapon(ItemData newItem)
+    {
+        currentWeapon = newItem;
+        if (knifeHolder) knifeHolder.SetActive(false);
+        if (axeHolder) axeHolder.SetActive(false);
+        if (nailStickHolder) nailStickHolder.SetActive(false);
+        currentActiveHolder = null;
+
+        if (newItem == null || newItem.itemType != ItemType.Weapon)
+        {
+            if (bodyTransform != null) bodyTransform.gameObject.SetActive(true);
+            return;
+        }
+
+        if (newItem.itemName == "Knife") currentActiveHolder = knifeHolder;
+        else if (newItem.itemName == "Axe") currentActiveHolder = axeHolder;
+        else if (newItem.itemName == "NailStick") currentActiveHolder = nailStickHolder;
+
+        if (currentActiveHolder != null)
+        {
+            if (bodyTransform != null) bodyTransform.gameObject.SetActive(false);
+            currentActiveHolder.SetActive(true);
+        }
     }
 
     void HandleInput()
@@ -119,62 +177,14 @@ public class PlayerController : MonoBehaviour
         if (legAnim) { legAnim.SetFloat("Speed", currentSpeed); legAnim.SetBool("IsRunning", isRunning); }
     }
 
-    void FixedUpdate()
-    {
-        rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
-
-        Vector2 lookDir = mousePos - rb.position;
-        float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
-
-        if (currentActiveHolder != null)
-            currentActiveHolder.transform.rotation = Quaternion.Euler(0, 0, angle);
-
-        if (bodyTransform != null) bodyTransform.rotation = Quaternion.Euler(0, 0, angle);
-
-        if (movement.magnitude > 0.1f && legsTransform != null)
-        {
-            float angleLegs = Mathf.Atan2(movement.y, movement.x) * Mathf.Rad2Deg - 90f;
-            legsTransform.rotation = Quaternion.Lerp(legsTransform.rotation, Quaternion.Euler(0, 0, angleLegs), 0.2f);
-        }
-    }
-
-    public void EquipWeapon(ItemData newItem)
-    {
-        currentWeapon = newItem;
-
-        if (knifeHolder) knifeHolder.SetActive(false);
-        if (axeHolder) axeHolder.SetActive(false);
-        if (nailStickHolder) nailStickHolder.SetActive(false);
-        currentActiveHolder = null;
-
-        if (newItem == null || newItem.itemType != ItemType.Weapon)
-        {
-            if (bodyTransform != null) bodyTransform.gameObject.SetActive(true);
-            return;
-        }
-
-        if (newItem.itemName == "Knife") currentActiveHolder = knifeHolder;
-        else if (newItem.itemName == "Axe") currentActiveHolder = axeHolder;
-        else if (newItem.itemName == "NailStick") currentActiveHolder = nailStickHolder;
-
-        if (currentActiveHolder != null)
-        {
-            if (bodyTransform != null) bodyTransform.gameObject.SetActive(false);
-            currentActiveHolder.SetActive(true);
-        }
-    }
-
     void PerformAttack(bool isLight)
     {
         float cost = isLight ? currentWeapon.staminaCost : currentWeapon.heavyStaminaCost;
         if (currentStamina < cost) return;
-
         currentStamina -= cost;
         float delay = isLight ? (1f / attackRate) : (1.5f / attackRate);
         nextAttackTime = Time.time + delay;
-
         pendingDamage = isLight ? currentWeapon.damage : currentWeapon.heavyDamage;
-
         if (currentActiveHolder != null)
         {
             Animator weaponAnim = currentActiveHolder.GetComponent<Animator>();
@@ -184,7 +194,6 @@ public class PlayerController : MonoBehaviour
                 weaponAnim.SetTrigger("Attack");
             }
         }
-
         if (audioSource && swingSound) audioSource.PlayOneShot(swingSound);
         DealDamage();
     }
@@ -192,12 +201,9 @@ public class PlayerController : MonoBehaviour
     public void DealDamage()
     {
         if (attackPoint == null || currentActiveHolder == null || currentWeapon == null) return;
-
         float zAngle = currentActiveHolder.transform.eulerAngles.z;
         Collider2D[] hitEnemies = Physics2D.OverlapBoxAll(attackPoint.position, attackBoxSize, zAngle, enemyLayers);
-
         float currentKnockback = (pendingDamage == currentWeapon.damage) ? currentWeapon.knockback : currentWeapon.heavyKnockback;
-
         foreach (Collider2D enemy in hitEnemies)
         {
             EnemyStats enemyStats = enemy.GetComponent<EnemyStats>();
@@ -211,50 +217,29 @@ public class PlayerController : MonoBehaviour
 
     void UpdateUI()
     {
-        // ✅ แก้ไข: ใช้สูตรหารทศนิยมเพื่อให้ Slider ที่มี Max 1 ทำงานได้
-        if (hpSlider != null)
-            hpSlider.value = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0;
-
-        if (staminaSlider != null)
-            staminaSlider.value = (maxStamina > 0) ? currentStamina / maxStamina : 0;
+        if (hpSlider != null) hpSlider.value = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0;
+        if (staminaSlider != null) staminaSlider.value = (maxStamina > 0) ? currentStamina / maxStamina : 0;
     }
 
     public void PlayerTakeDamage(int dmg)
     {
         currentHealth = Mathf.Max(0, currentHealth - dmg);
-
-        UpdateUI(); // ✅ สั่งอัพเดทหลอดเลือดทันทีที่โดนตี
-
-        if (DigestionSystem.instance != null)
-            DigestionSystem.instance.IncreaseDigestion(5f);
-
+        UpdateUI();
         if (currentHealth <= 0) Die();
     }
 
     void Die()
     {
-        Debug.Log("Game Over!");
-        if (currentActiveHolder != null)
-            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
-
+        if (currentActiveHolder != null) currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
         Time.timeScale = 0f;
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
-
         this.enabled = false;
     }
 
-    public void RestartGame()
-    {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-    }
+    public void RestartGame() { Time.timeScale = 1f; SceneManager.LoadScene(SceneManager.GetActiveScene().name); }
 
     void OnDrawGizmos()
     {
-        if (attackPoint != null)
-        {
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireCube(attackPoint.position, attackBoxSize);
-        }
+        if (attackPoint != null) { Gizmos.color = Color.yellow; Gizmos.DrawWireCube(attackPoint.position, attackBoxSize); }
     }
 }

@@ -45,4 +45,5 @@ public class ItemData : ScriptableObject
     public int heavyDamage = 20;
     public float heavyStaminaCost = 25f;
     public float heavyKnockback = 6f;
+
 }

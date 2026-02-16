@@ -44,7 +44,6 @@ public class Inventory : MonoBehaviour
         return true;
     }
 
-    // ✅ ฟังก์ชันเช็คไอเทมแบบระบุจำนวน (ป้องกัน Error ใน QuestObstacle)
     public bool HasItem(ItemData item, int amountRequired = 1)
     {
         int totalCount = 0;
@@ -55,7 +54,6 @@ public class Inventory : MonoBehaviour
         return totalCount >= amountRequired;
     }
 
-    // ✅ ฟังก์ชันลบไอเทมแบบระบุจำนวน (สำหรับระบบคราฟต์)
     public void RemoveItem(ItemData item, int amountToRemove = 1)
     {
         for (int i = 0; i < items.Count; i++)
@@ -70,7 +68,6 @@ public class Inventory : MonoBehaviour
         onItemChangedCallback?.Invoke();
     }
 
-    // ✅ แก้ Error CS1061 ใน ItemDrag.cs: เพิ่มฟังก์ชันสลับของ
     public void SwapItems(int indexA, int indexB)
     {
         if (indexA >= 0 && indexA < space && indexB >= 0 && indexB < space)
@@ -92,5 +89,25 @@ public class Inventory : MonoBehaviour
     {
         currentEquippedItem = null;
         if (handRenderer != null) handRenderer.enabled = false;
+    }
+    public InventoryItem GetItemAt(int index)
+    {
+        if (index >= 0 && index < items.Count) return items[index];
+        return null;
+    }
+
+    public int GetItemCount(ItemData item)
+    {
+        if (items == null) return 0;
+
+        int total = 0;
+        foreach (var slot in items)
+        {
+            if (slot != null && slot.itemData == item)
+            {
+                total += slot.amount;
+            }
+        }
+        return total;
     }
 }
