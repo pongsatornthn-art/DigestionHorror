@@ -5,9 +5,13 @@ using System.Collections.Generic;
 public class CraftingManager : MonoBehaviour
 {
     public static CraftingManager instance;
+
+    [Header("UI References")]
     public CraftingSlot[] inputSlots;
     public Image resultPreviewImage;
-    public Button craftButton;
+    public Button craftButton; 
+
+    [Header("Data")]
     public List<CraftingRecipe> recipes;
     private CraftingRecipe currentRecipe;
 
@@ -16,80 +20,143 @@ public class CraftingManager : MonoBehaviour
         instance = this;
     }
 
-    public void CheckRecipe()
+    void Start()
     {
-        Dictionary<ItemData, int> currentInTable = new Dictionary<ItemData, int>();
-        foreach (var slot in inputSlots)
-        {
-            if (slot.itemInSlot != null)
-            {
-                if (currentInTable.ContainsKey(slot.itemInSlot))
-                    currentInTable[slot.itemInSlot] += slot.amount;
-                else
-                    currentInTable.Add(slot.itemInSlot, slot.amount);
-            }
-        }
-
-        currentRecipe = null;
         if (resultPreviewImage != null) resultPreviewImage.enabled = false;
         if (craftButton != null) craftButton.interactable = false;
+    }
 
-        foreach (var recipe in recipes)
+    public void CheckRecipe()
+    {
+        currentRecipe = null;
+
+        // รีเซ็ต UI ก่อนเริ่มเช็ค
+        if (resultPreviewImage != null)
         {
-            // ✅ ข้ามสูตรที่ว่าง (None) เพื่อไม่ให้ Error
-            if (recipe == null) continue;
+            resultPreviewImage.sprite = null;
+            resultPreviewImage.enabled = false;
+        }
+        if (craftButton != null) craftButton.interactable = false;
 
-            if (IsMatch(recipe, currentInTable))
+        // 1. รวบรวมไอเทมทั้งหมดบนโต๊ะ "แตกเป็นชิ้นๆ" ใส่ List
+        // (เช่น ไม้ x2 จะถูกแตกเป็น [ไม้, ไม้] เพื่อให้เช็คง่าย)
+        List<ItemData> itemsOnTable = new List<ItemData>();
+        foreach (var slot in inputSlots)
+        {
+            if (slot.itemInSlot != null && slot.amount > 0)
             {
-                currentRecipe = recipe;
-                if (resultPreviewImage != null)
+                for (int i = 0; i < slot.amount; i++)
                 {
-                    resultPreviewImage.sprite = recipe.result.icon;
-                    resultPreviewImage.enabled = true;
+                    itemsOnTable.Add(slot.itemInSlot);
                 }
-                if (craftButton != null) craftButton.interactable = true;
-                return;
             }
         }
 
+        foreach (CraftingRecipe recipe in recipes)
+        {
+            if (recipe == null) continue;
+
+            List<ItemData> requiredItems = new List<ItemData>();
+            foreach (var ing in recipe.ingredients)
+            {
+                for (int i = 0; i < ing.amount; i++) requiredItems.Add(ing.item);
+            }
+
+            // ⭐ กฎเหล็กข้อที่ 1: "จำนวนต้องเท่ากันเป๊ะ"
+            // ถ้าบนโต๊ะมี 3 ชิ้น แต่สูตรใช้ 2 ชิ้น -> ปัดตกทันที (แก้บั๊ก A+B ได้ Z)
+            if (itemsOnTable.Count != requiredItems.Count)
+            {
+                continue;
+            }
+
+            // ⭐ กฎเหล็กข้อที่ 2: "ไส้ในต้องเหมือนกัน"
+            if (CheckIngredientsExact(itemsOnTable, requiredItems))
+            {
+                // เจอสูตรที่ถูกต้อง!
+                currentRecipe = recipe;
+                UpdateResultUI();
+                return; // หยุดหาทันที
+            }
+        }
     }
 
+    // ฟังก์ชันช่วยเช็คว่าของตรงกันไหม (ไม่สนลำดับการวาง)
+    bool CheckIngredientsExact(List<ItemData> tableList, List<ItemData> recipeList)
+    {
+        // สร้างรายการจำลองมาเพื่อขีดฆ่าออก
+        List<ItemData> tempCheckList = new List<ItemData>(tableList);
 
-    bool IsMatch(CraftingRecipe recipe, Dictionary<ItemData, int> currentInTable)
-    {
-        foreach (var ing in recipe.ingredients)
+        foreach (ItemData req in recipeList)
         {
-            if (!currentInTable.ContainsKey(ing.item) || currentInTable[ing.item] < ing.amount)
-                return false;
+            if (tempCheckList.Contains(req))
+            {
+                tempCheckList.Remove(req); // เจอแล้วลบออก 1 ชิ้น
+            }
+            else
+            {
+                return false; // หาไม่เจอแสดงว่าสูตรผิด
+            }
         }
-        return true;
+
+        // เช็คครั้งสุดท้าย: ต้องไม่มีของเหลือในรายการจำลอง
+        return tempCheckList.Count == 0;
     }
-    // เพิ่มฟังก์ชันนี้ใน CraftingManager.cs ครับ
-    public int GetTotalItemInInventory(ItemData item)
+
+    void UpdateResultUI()
     {
-        // เรียกไปที่ระบบ Inventory ของคุณพงศธรเพื่อนับจำนวนไอเทมชิ้นนี้ทั้งหมดที่มี
-        if (Inventory.instance != null)
+        if (currentRecipe != null)
         {
-            return Inventory.instance.GetItemCount(item);
+            if (resultPreviewImage != null)
+            {
+                resultPreviewImage.sprite = currentRecipe.result.icon;
+                resultPreviewImage.enabled = true;
+            }
+            if (craftButton != null) craftButton.interactable = true;
         }
-        return 0;
     }
+
+    // ---------------------------------------------------------
+    // 🛠️ ส่วน Action (คราฟต์, ยกเลิก, คืนของ)
+    // ---------------------------------------------------------
 
     public void ConfirmCraft()
     {
         if (currentRecipe != null)
         {
+            Inventory.instance.AddItem(currentRecipe.result, currentRecipe.resultAmount);
 
-            Inventory.instance.AddItem(currentRecipe.result);
-
+            // 2. ล้างของบนโต๊ะทิ้ง (เพราะใช้ไปแล้ว)
             foreach (var slot in inputSlots)
             {
                 if (slot != null) slot.ClearSlot();
             }
 
+            // 3. รีเซ็ตระบบ
             CheckRecipe();
-            Debug.Log("คราฟต์เสร็จสมบูรณ์!");
+            Debug.Log($"คราฟต์ {currentRecipe.result.itemName} สำเร็จ!");
         }
+    }
+
+    public void CancelCrafting()
+    {
+        foreach (var slot in inputSlots)
+        {
+            if (slot != null && slot.itemInSlot != null && slot.amount > 0)
+            {
+                // คืนของเข้ากระเป๋า
+                Inventory.instance.AddItem(slot.itemInSlot, slot.amount);
+                slot.ClearSlot();
+            }
+        }
+        CheckRecipe();
+        Debug.Log("ยกเลิกและคืนของเรียบร้อย");
+    }
+
+    // Helper Functions
+    public int GetTotalItemInInventory(ItemData item)
+    {
+        if (Inventory.instance != null) return Inventory.instance.GetItemCount(item);
+        return 0;
     }
 
     public int GetAmountOnTable(ItemData item)
@@ -101,26 +168,4 @@ public class CraftingManager : MonoBehaviour
         }
         return total;
     }
-    public void CancelCrafting()
-    {
-        // วนลูปเช็คทุกช่องในโต๊ะคราฟต์
-        foreach (var slot in inputSlots)
-        {
-            // ถ้าในช่องมีไอเทมค้างอยู่
-            if (slot != null && slot.itemInSlot != null && slot.amount > 0)
-            {
-                // 1. เพิ่มไอเทมคืนกลับเข้าไปใน Inventory
-                Inventory.instance.AddItem(slot.itemInSlot, slot.amount);
-
-                // 2. ล้างข้อมูลในช่องคราฟต์นั้นทิ้ง
-                slot.ClearSlot();
-            }
-        }
-
-        // 3. ตรวจสอบสูตรใหม่ (ซึ่งควรจะกลายเป็นว่างเปล่า)
-        CheckRecipe();
-
-        Debug.Log("ยกเลิกการคราฟต์และคืนไอเทมทั้งหมดเข้ากระเป๋าแล้ว");
-    }
-
 }

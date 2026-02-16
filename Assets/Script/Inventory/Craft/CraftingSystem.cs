@@ -10,6 +10,7 @@ public class CraftingRecipe
     public string recipeName;
     public List<Ingredient> ingredients;
     public ItemData result;
+    internal object resultAmount;
 }
 
 public class CraftingSystem : MonoBehaviour

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 [System.Serializable]
 public class InventoryItem
@@ -109,5 +110,10 @@ public class Inventory : MonoBehaviour
             }
         }
         return total;
+    }
+
+    internal void AddItem(ItemData result, object resultAmount)
+    {
+        throw new NotImplementedException();
     }
 }
