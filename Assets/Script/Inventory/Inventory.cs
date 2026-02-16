@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using System;
 
 [System.Serializable]
 public class InventoryItem
@@ -28,22 +27,41 @@ public class Inventory : MonoBehaviour
     {
         if (instance != null) return;
         instance = this;
+        // เติมช่องว่างให้ครบตามจำนวน space
         while (items.Count < space) items.Add(null);
     }
 
+    // ⭐ ฟังก์ชัน AddItem ตัวจริง (ใช้ตัวนี้ตัวเดียวพอครับ)
+    // รองรับทั้งการเก็บของปกติ (amount=1) และจากการคราฟต์ (amount > 1)
     public bool AddItem(ItemData item, int amount = 1)
     {
+        // 1. เช็คว่ามีของกองเดิมที่ยังไม่เต็มไหม (สำหรับของที่ Stack ได้)
         InventoryItem existingItem = items.Find(i => i != null && i.itemData == item && i.itemData.isStackable && i.amount < i.itemData.maxStack);
-        if (existingItem != null) { existingItem.AddAmount(amount); }
+
+        if (existingItem != null)
+        {
+            existingItem.AddAmount(amount); // เพิ่มจำนวนทบเข้าไป
+        }
         else
         {
+            // 2. ถ้าไม่มีกองเดิม ให้หาช่องว่างช่องแรก
             int emptyIndex = items.FindIndex(i => i == null);
-            if (emptyIndex != -1) items[emptyIndex] = new InventoryItem(item, amount);
-            else return false;
+            if (emptyIndex != -1)
+            {
+                items[emptyIndex] = new InventoryItem(item, amount); // สร้างกองใหม่
+            }
+            else
+            {
+                Debug.Log("กระเป๋าเต็ม!");
+                return false;
+            }
         }
+
         onItemChangedCallback?.Invoke();
         return true;
     }
+
+    // ... (ส่วนอื่นๆ เหมือนเดิม) ...
 
     public bool HasItem(ItemData item, int amountRequired = 1)
     {
@@ -61,8 +79,17 @@ public class Inventory : MonoBehaviour
         {
             if (items[i] != null && items[i].itemData == item)
             {
-                if (items[i].amount > amountToRemove) { items[i].amount -= amountToRemove; amountToRemove = 0; }
-                else { amountToRemove -= items[i].amount; if (currentEquippedItem == item) Unequip(); items[i] = null; }
+                if (items[i].amount > amountToRemove)
+                {
+                    items[i].amount -= amountToRemove;
+                    amountToRemove = 0;
+                }
+                else
+                {
+                    amountToRemove -= items[i].amount;
+                    if (currentEquippedItem == item) Unequip();
+                    items[i] = null;
+                }
             }
             if (amountToRemove <= 0) break;
         }
@@ -83,7 +110,11 @@ public class Inventory : MonoBehaviour
     public void EquipItem(ItemData itemToEquip)
     {
         currentEquippedItem = itemToEquip;
-        if (handRenderer != null && itemToEquip != null) { handRenderer.sprite = itemToEquip.equippedSprite; handRenderer.enabled = true; }
+        if (handRenderer != null && itemToEquip != null)
+        {
+            handRenderer.sprite = itemToEquip.equippedSprite;
+            handRenderer.enabled = true;
+        }
     }
 
     public void Unequip()
@@ -91,6 +122,7 @@ public class Inventory : MonoBehaviour
         currentEquippedItem = null;
         if (handRenderer != null) handRenderer.enabled = false;
     }
+
     public InventoryItem GetItemAt(int index)
     {
         if (index >= 0 && index < items.Count) return items[index];
@@ -100,20 +132,12 @@ public class Inventory : MonoBehaviour
     public int GetItemCount(ItemData item)
     {
         if (items == null) return 0;
-
         int total = 0;
         foreach (var slot in items)
         {
-            if (slot != null && slot.itemData == item)
-            {
-                total += slot.amount;
-            }
+            if (slot != null && slot.itemData == item) total += slot.amount;
         }
         return total;
     }
 
-    internal void AddItem(ItemData result, object resultAmount)
-    {
-        throw new NotImplementedException();
-    }
 }

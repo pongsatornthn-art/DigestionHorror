@@ -123,17 +123,23 @@ public class CraftingManager : MonoBehaviour
     {
         if (currentRecipe != null)
         {
+            // 1. ให้ของรางวัลเข้ากระเป๋า
             Inventory.instance.AddItem(currentRecipe.result, currentRecipe.resultAmount);
 
-            // 2. ล้างของบนโต๊ะทิ้ง (เพราะใช้ไปแล้ว)
+            // ✅ เก็บชื่อของไว้ก่อน (เพื่อ Log)
+            string craftedItemName = currentRecipe.result.itemName;
+
+            // 2. ล้างของบนโต๊ะทิ้ง
             foreach (var slot in inputSlots)
             {
                 if (slot != null) slot.ClearSlot();
             }
 
-            // 3. รีเซ็ตระบบ
+            // 3. รีเซ็ตระบบ (คำสั่งนี้จะทำให้ currentRecipe กลายเป็น null)
             CheckRecipe();
-            Debug.Log($"คราฟต์ {currentRecipe.result.itemName} สำเร็จ!");
+
+            // ✅ ใช้ชื่อที่เก็บไว้มาแสดงผลแทน (ไม่ Error แล้ว)
+            Debug.Log($"คราฟต์ {craftedItemName} สำเร็จ!");
         }
     }
 
