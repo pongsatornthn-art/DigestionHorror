@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: NailStick
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: NailStick
-  icon: {fileID: 0}
+  icon: {fileID: -2487646273995597588, guid: 9bcc61b1c5a504d49a98d3176b707195, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: -2487646273995597588, guid: 9bcc61b1c5a504d49a98d3176b707195, type: 3}
   isStackable: 1
   maxStack: 1
-  itemType: 0
+  itemType: 1
   equippedSprite: {fileID: -8662211420058709168, guid: 928fef24ada16c646b21f9bd236d6ce2, type: 3}
   weaponAnimatorOverride: {fileID: 0}
   weaponID: 0
