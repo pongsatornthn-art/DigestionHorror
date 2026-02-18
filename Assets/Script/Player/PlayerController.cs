@@ -179,12 +179,25 @@ public class PlayerController : MonoBehaviour
 
     void PerformAttack(bool isLight)
     {
+        // เช็คความปลอดภัยก่อน (กัน Error ที่ทำให้ภาพไม่ขึ้นหรืออนิเมชันค้าง)
+        if (currentWeapon == null) return;
+
         float cost = isLight ? currentWeapon.staminaCost : currentWeapon.heavyStaminaCost;
-        if (currentStamina < cost) return;
+
+        if (currentStamina < cost)
+        {
+            Debug.Log("Stamina ไม่พอ!");
+            return;
+        }
+
         currentStamina -= cost;
-        float delay = isLight ? (1f / attackRate) : (1.5f / attackRate);
-        nextAttackTime = Time.time + delay;
+
+        // ✅ เปลี่ยนจุดนี้: ดึงคูลดาวน์มาจาก ItemData แทนการคำนวณผ่าน attackRate เดิม
+        float cooldown = isLight ? currentWeapon.lightAttackCooldown : currentWeapon.heavyAttackCooldown;
+        nextAttackTime = Time.time + cooldown;
+
         pendingDamage = isLight ? currentWeapon.damage : currentWeapon.heavyDamage;
+
         if (currentActiveHolder != null)
         {
             Animator weaponAnim = currentActiveHolder.GetComponent<Animator>();
@@ -192,10 +205,13 @@ public class PlayerController : MonoBehaviour
             {
                 weaponAnim.SetBool("IsLight", isLight);
                 weaponAnim.SetTrigger("Attack");
+
+                if (audioSource && swingSound) audioSource.PlayOneShot(swingSound);
+
+                // เรียก DealDamage ตามปกติ
+                Invoke("DealDamage", 0.2f);
             }
         }
-        if (audioSource && swingSound) audioSource.PlayOneShot(swingSound);
-        DealDamage();
     }
 
     public void DealDamage()
