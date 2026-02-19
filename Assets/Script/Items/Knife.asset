@@ -25,6 +25,9 @@ MonoBehaviour:
   damage: 10
   staminaCost: 0
   knockback: 3
+  lightAttackCooldown: 0.5
   heavyDamage: 20
   heavyStaminaCost: 0
   heavyKnockback: 5
+  heavyAttackCooldown: 1.2
+  maxDurability: 100

@@ -14,6 +14,11 @@ public class PlayerController : MonoBehaviour
     private Animator bodyAnim;
     private Animator legAnim;
 
+    [Header("Weapon Durability System")]
+    public Weapon[] allWeapons;
+    public float durabilityLossPerHit = 10f;
+    public GameObject durabilityUI;
+
     [Header("Separate Weapon System")]
     public GameObject knifeHolder;
     public GameObject axeHolder;
@@ -46,7 +51,7 @@ public class PlayerController : MonoBehaviour
     public Transform attackPoint;
     public Vector2 attackBoxSize = new Vector2(1.5f, 1f);
     public LayerMask enemyLayers;
-    public float attackRate = 2f;
+    // public float attackRate = 2f; (ไม่ได้ใช้แล้ว เพราะดึงจาก ItemData)
     private float nextAttackTime = 0f;
 
     [Header("Game Over & Sound")]
@@ -54,6 +59,7 @@ public class PlayerController : MonoBehaviour
     public AudioSource audioSource;
     public AudioClip swingSound;
     public AudioClip hitSound;
+    public AudioClip brokenWeaponSound;
 
     void Awake() => instance = this;
 
@@ -71,14 +77,12 @@ public class PlayerController : MonoBehaviour
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         EquipWeapon(currentWeapon);
 
-        // เริ่มเกมมาให้เมาส์เลื่อนได้ปกติแต่ซ่อนไว้ (สำหรับเกม Top-down)
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Confined;
     }
 
     void Update()
     {
-        // ✅ 1. ถ้าเปิด UI อยู่ ให้หยุดรับคำสั่งควบคุมทั้งหมดเพื่อให้เมาส์เป็นอิสระ
         if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)
         {
             movement = Vector2.zero;
@@ -89,17 +93,15 @@ public class PlayerController : MonoBehaviour
         UpdateUI();
         HandleCombatInput();
         UpdateAnimationParams();
+        // ❌ เอา if (Input.GetMouseButtonDown(0)) { Attack(); } ตรงนี้ออกไปแล้วครับ
     }
 
     void FixedUpdate()
     {
-        // ✅ 2. รวมฟังก์ชัน FixedUpdate ไว้ที่เดียว และเช็ค UI
         if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) return;
 
-        // โค้ดขยับตัว
         rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
 
-        // โค้ดหันหน้าตามเมาส์
         Vector2 lookDir = mousePos - rb.position;
         float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
 
@@ -115,16 +117,25 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- ส่วนฟังก์ชันอื่นๆ (EquipWeapon, PerformAttack, etc.) ของคุณพงศธรคงเดิม ---
+
     public void EquipWeapon(ItemData newItem)
     {
         currentWeapon = newItem;
+
+
         if (knifeHolder) knifeHolder.SetActive(false);
         if (axeHolder) axeHolder.SetActive(false);
         if (nailStickHolder) nailStickHolder.SetActive(false);
         currentActiveHolder = null;
 
-        if (newItem == null || newItem.itemType != ItemType.Weapon)
+        bool isWeapon = (newItem != null && newItem.itemType == ItemType.Weapon);
+
+        if (durabilityUI != null)
+        {
+            durabilityUI.SetActive(isWeapon);
+        }
+
+        if (!isWeapon)
         {
             if (bodyTransform != null) bodyTransform.gameObject.SetActive(true);
             return;
@@ -138,6 +149,12 @@ public class PlayerController : MonoBehaviour
         {
             if (bodyTransform != null) bodyTransform.gameObject.SetActive(false);
             currentActiveHolder.SetActive(true);
+
+            Weapon activeWeapon = currentActiveHolder.GetComponent<Weapon>();
+            if (activeWeapon != null)
+            {
+                activeWeapon.UpdateUI();
+            }
         }
     }
 
@@ -163,6 +180,7 @@ public class PlayerController : MonoBehaviour
 
     void HandleCombatInput()
     {
+        // เช็คคูลดาวน์ก่อนเลย
         if (Time.time >= nextAttackTime && currentWeapon != null && currentWeapon.itemType == ItemType.Weapon)
         {
             if (Input.GetMouseButtonDown(0)) PerformAttack(true);
@@ -179,11 +197,27 @@ public class PlayerController : MonoBehaviour
 
     void PerformAttack(bool isLight)
     {
-        // เช็คความปลอดภัยก่อน (กัน Error ที่ทำให้ภาพไม่ขึ้นหรืออนิเมชันค้าง)
         if (currentWeapon == null) return;
 
-        float cost = isLight ? currentWeapon.staminaCost : currentWeapon.heavyStaminaCost;
+        Weapon activeWeapon = GetActiveWeapon();
 
+        if (activeWeapon != null && activeWeapon.IsBroken())
+        {
+            Debug.Log("โจมตีไม่ได้! อาวุธพังแล้ว ต้องซ่อมก่อนกด C");
+
+            if (audioSource != null && brokenWeaponSound != null)
+            {
+                audioSource.PlayOneShot(brokenWeaponSound);
+            }
+
+            nextAttackTime = Time.time + 0.3f;
+
+            return;
+        }
+
+
+
+        float cost = isLight ? currentWeapon.staminaCost : currentWeapon.heavyStaminaCost;
         if (currentStamina < cost)
         {
             Debug.Log("Stamina ไม่พอ!");
@@ -191,10 +225,13 @@ public class PlayerController : MonoBehaviour
         }
 
         currentStamina -= cost;
-
-        // ✅ เปลี่ยนจุดนี้: ดึงคูลดาวน์มาจาก ItemData แทนการคำนวณผ่าน attackRate เดิม
         float cooldown = isLight ? currentWeapon.lightAttackCooldown : currentWeapon.heavyAttackCooldown;
         nextAttackTime = Time.time + cooldown;
+
+        if (activeWeapon != null)
+        {
+            activeWeapon.UseWeapon(durabilityLossPerHit);
+        }
 
         pendingDamage = isLight ? currentWeapon.damage : currentWeapon.heavyDamage;
 
@@ -208,7 +245,6 @@ public class PlayerController : MonoBehaviour
 
                 if (audioSource && swingSound) audioSource.PlayOneShot(swingSound);
 
-                // เรียก DealDamage ตามปกติ
                 Invoke("DealDamage", 0.2f);
             }
         }
@@ -257,5 +293,18 @@ public class PlayerController : MonoBehaviour
     void OnDrawGizmos()
     {
         if (attackPoint != null) { Gizmos.color = Color.yellow; Gizmos.DrawWireCube(attackPoint.position, attackBoxSize); }
+    }
+
+    // ⭐ ฟังก์ชันสำหรับค้นหาว่าโมเดลไหนเปิดอยู่
+    Weapon GetActiveWeapon()
+    {
+        foreach (Weapon weapon in allWeapons)
+        {
+            if (weapon != null && weapon.gameObject.activeInHierarchy)
+            {
+                return weapon;
+            }
+        }
+        return null;
     }
 }

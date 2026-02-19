@@ -14,6 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: SharpeningStone
   icon: {fileID: -6276408390063833456, guid: 5e92ac573584a4d4d8762c86f520ae72, type: 3}
+  description: 
+  descriptionImage: {fileID: 0}
   isStackable: 1
   maxStack: 1
+  itemType: 0
   equippedSprite: {fileID: -6276408390063833456, guid: 5e92ac573584a4d4d8762c86f520ae72, type: 3}
+  weaponAnimatorOverride: {fileID: 0}
+  weaponID: 0
+  damage: 10
+  staminaCost: 10
+  knockback: 3
+  lightAttackCooldown: 0.5
+  heavyDamage: 20
+  heavyStaminaCost: 25
+  heavyKnockback: 6
+  heavyAttackCooldown: 1.2
+  maxDurability: 0

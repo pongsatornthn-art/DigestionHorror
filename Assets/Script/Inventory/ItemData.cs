@@ -36,4 +36,6 @@ public class ItemData : ScriptableObject
     public float heavyStaminaCost = 25f;
     public float heavyKnockback = 6f;
     public float heavyAttackCooldown = 1.2f; // ⭐ เพิ่มใหม่: คูลดาวน์โจมตีหนัก
+
+    public float maxDurability;
 }
