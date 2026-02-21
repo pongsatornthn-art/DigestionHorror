@@ -4,18 +4,40 @@ using UnityEngine;
 public class LootBox : MonoBehaviour
 {
     [Header("Settings")]
-    public LootTable lootTable; // ลากไฟล์ LootTable มาใส่ตรงนี้
-
-    // รายการของที่มีในกล่องตอนนี้
+    public LootTable lootTable;
     public List<InventoryItem> boxContents = new List<InventoryItem>();
 
-    private bool isOpened = false;
-    private bool isMouseOver = false;
+    [Header("Normal Box Settings")]
+    public bool destroyAfterOpen = false;
+
+    [Header("Interaction (ระยะการเปิดกล่อง)")]
+    public float interactRange = 2f; // ⭐ ปรับระยะการยืนเปิดกล่องได้ที่ Inspector
+    private Transform player;
+
+    private bool isPlayerDeathBox = false;
+    private bool hasStartedDestroyTimer = false;
+
+    public void SetBoxContents(List<InventoryItem> droppedItems)
+    {
+        isPlayerDeathBox = true;
+        boxContents = droppedItems;
+    }
 
     void Start()
     {
-        // เริ่มเกมมา สุ่มของใส่กล่องรอไว้เลย!
-        if (lootTable != null)
+        // เริ่มเกมปุ๊บ สั่งให้กล่องรายงานตัวเลยว่าหา Player เจอไหม
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+        {
+            player = playerObj.transform;
+            Debug.Log("✅ [LootBox] เจอตัว Player แล้ว!");
+        }
+        else
+        {
+            Debug.LogError("❌ [LootBox] หาตัว Player ไม่เจอ! (ลืมตั้ง Tag เป็น Player ให้ตัวละครหรือเปล่า?)");
+        }
+
+        if (!isPlayerDeathBox && lootTable != null)
         {
             boxContents = lootTable.GenerateLoot();
         }
@@ -23,59 +45,93 @@ public class LootBox : MonoBehaviour
 
     void Update()
     {
-        // เช็คการกดปุ่ม E
+        // ดักจับเวลากดปุ่ม E ดูก่อนเลย
         if (Input.GetKeyDown(KeyCode.E))
         {
-            // ⭐ เงื่อนไขที่ 1: ถ้าเปิดอยู่แล้ว ให้ปิด (ไม่ต้องสนว่าเมาส์ชี้ไหม)
-            if (isOpened)
+            if (player == null)
             {
-                CloseChest();
+                Debug.LogWarning("⚠️ กด E แล้ว แต่ระบบหาตัว Player ไม่เจอ (กลับไปเช็ค Tag ด่วน!)");
+                return; // หยุดทำงานทันที
             }
-            // ⭐ เงื่อนไขที่ 2: ถ้ายังไม่เปิด แต่เมาส์ชี้อยู่ ให้เปิด
-            else if (isMouseOver)
+
+            // คำนวณระยะห่าง แล้วปริ้นท์บอกใน Console
+            float distance = Vector2.Distance(transform.position, player.position);
+            Debug.Log($"📏 กด E แล้ว! ระยะห่างคือ: {distance} (ระยะที่เปิดได้คือ {interactRange})");
+
+            if (distance <= interactRange)
             {
-                OpenChest();
+                bool isChestOpen = ChestUI.instance != null && ChestUI.instance.chestPanel.activeSelf;
+                if (!isChestOpen)
+                {
+                    Debug.Log("🔓 อยู่ในระยะ! กำลังสั่งเปิดกล่อง...");
+                    OpenChest();
+                }
+                else
+                {
+                    Debug.Log("⚠️ หน้าต่างกล่องเปิดอยู่แล้ว");
+                }
+            }
+            else
+            {
+                Debug.Log("❌ อยู่ไกลเกินไป เปิดไม่ได้! ต้องเดินเข้าไปใกล้กว่านี้");
             }
         }
     }
 
-    // ฟังก์ชันตรวจจับเมาส์
-    void OnMouseEnter() => isMouseOver = true;
-    void OnMouseExit() => isMouseOver = false;
+    // ❌ เราจะลบ OnMouseEnter กับ OnMouseExit ทิ้งไปเลยครับ ไม่ต้องใช้เมาส์ชี้แล้ว!
 
     void OpenChest()
     {
-        Debug.Log("Open Chest!");
-        isOpened = true; // จำสถานะว่าเปิดแล้ว
+        Debug.Log("🔓 สั่งเปิดกล่องและกระเป๋าแล้ว!");
 
-        // 1. เปิดหน้าจอกระเป๋าเรา (Inventory)
-        if (InventoryUI.instance != null)
-            InventoryUI.instance.inventoryPanel.SetActive(true);
-
-        // 2. เปิดหน้าจอกล่อง (Chest UI)
-        if (ChestUI.instance != null)
-            ChestUI.instance.ShowChest(this);
-    }
-
-    // ⭐ เพิ่มฟังก์ชันปิดกล่อง
-    public void CloseChest()
-    {
-        Debug.Log("Close Chest!");
-        isOpened = false; // รีเซ็ตสถานะเป็นปิด
-
-        // สั่งให้ UI ปิดหน้าต่าง
+        // 1. สั่งเปิดหน้าต่างกล่อง
         if (ChestUI.instance != null)
         {
-            ChestUI.instance.CloseChest();
+            ChestUI.instance.ShowChest(this);
+        }
+
+        // ⭐ 2. สั่งบังคับเปิดหน้าต่างกระเป๋าตรงๆ (ห้ามใช้ ToggleInventory() ตรงนี้เด็ดขาด!)
+        if (InventoryUI.instance != null)
+        {
+            InventoryUI.instance.inventoryPanel.SetActive(true);
+
+            // ถ้าอยากให้หน้าต่างคราฟต์เปิดมาพร้อมกล่องด้วย ก็เอา // ข้างหน้าบรรทัดล่างออกครับ
+            if (InventoryUI.instance.craftingPanel != null) InventoryUI.instance.craftingPanel.SetActive(true);
+        }
+
+        // 3. เริ่มนับเวลาทำลายกล่อง (ถ้าเป็นกล่องคนตาย หรือตั้งค่าให้ลบ)
+        if ((isPlayerDeathBox || destroyAfterOpen) && !hasStartedDestroyTimer)
+        {
+            hasStartedDestroyTimer = true;
+            Destroy(gameObject, 10f);
         }
     }
 
-    // ฟังก์ชันให้ UI เรียกใช้ตอนหยิบของออก
     public void RemoveItem(InventoryItem itemToRemove)
     {
         if (boxContents.Contains(itemToRemove))
         {
             boxContents.Remove(itemToRemove);
         }
+    }
+
+    void OnDestroy()
+    {
+        if (ChestUI.instance != null && ChestUI.instance.chestPanel.activeSelf)
+        {
+            ChestUI.instance.CloseChest();
+
+            if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)
+            {
+                InventoryUI.instance.ToggleInventory();
+            }
+        }
+    }
+
+    // ⭐ เพิ่มฟังก์ชันนี้ เพื่อให้มีเส้นวงกลมสีเหลืองวาดบอกระยะรอบๆ กล่อง (ดูได้ในหน้า Scene)
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, interactRange);
     }
 }

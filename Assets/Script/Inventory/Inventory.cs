@@ -128,6 +128,35 @@ public class Inventory : MonoBehaviour
             onItemChangedCallback?.Invoke();
         }
     }
+    // ⭐ ฟังก์ชันสำหรับทิ้งของตอนตาย (ดึงของทั้งหมดออก ยกเว้นสิ่งที่กำหนด)
+    public List<InventoryItem> DropAllItemsExcept(string keepItemName)
+    {
+        List<InventoryItem> droppedItems = new List<InventoryItem>();
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            if (items[i] != null && items[i].itemData != null)
+            {
+                // ถ้าเป็นของที่อยากเก็บไว้ (เช่น "Knife") ให้ข้ามไป ไม่ต้องดรอป
+                if (items[i].itemData.itemName == keepItemName)
+                {
+                    continue;
+                }
+                else
+                {
+                    // ก๊อปปี้ของชิ้นนี้ไปใส่ใน List ของที่จะตก
+                    droppedItems.Add(new InventoryItem(items[i].itemData, items[i].amount));
+
+                    // ลบของชิ้นนี้ออกจากกระเป๋าผู้เล่น
+                    if (currentEquippedItem == items[i].itemData) Unequip();
+                    items[i] = null;
+                }
+            }
+        }
+
+        onItemChangedCallback?.Invoke(); // อัปเดต UI กระเป๋าให้ว่างเปล่า
+        return droppedItems;
+    }
 
     public void EquipItem(ItemData itemToEquip)
     {

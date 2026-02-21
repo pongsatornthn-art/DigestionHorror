@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 
 public class PlayerController : MonoBehaviour
 {
@@ -61,6 +62,10 @@ public class PlayerController : MonoBehaviour
     public AudioClip hitSound;
     public AudioClip brokenWeaponSound;
 
+    [Header("Death Settings")]
+    public GameObject playerDeathBoxPrefab;
+    public Transform respawnPoint;
+
     void Awake() => instance = this;
 
     void Start()
@@ -93,7 +98,6 @@ public class PlayerController : MonoBehaviour
         UpdateUI();
         HandleCombatInput();
         UpdateAnimationParams();
-        // ❌ เอา if (Input.GetMouseButtonDown(0)) { Attack(); } ตรงนี้ออกไปแล้วครับ
     }
 
     void FixedUpdate()
@@ -115,6 +119,32 @@ public class PlayerController : MonoBehaviour
             float angleLegs = Mathf.Atan2(movement.y, movement.x) * Mathf.Rad2Deg - 90f;
             legsTransform.rotation = Quaternion.Lerp(legsTransform.rotation, Quaternion.Euler(0, 0, angleLegs), 0.2f);
         }
+    }
+    public void PlayerDie()
+    {
+        Debug.Log("Player ตายแล้ว!");
+
+        if (playerDeathBoxPrefab != null && Inventory.Instance != null)
+        {
+            // 1. สั่งดึงของทุกอย่างออกมา (ยกเว้นมีด ให้เช็คชื่อ "Knife" ให้ตรงกับใน ItemData)
+            List<InventoryItem> droppedItems = Inventory.Instance.DropAllItemsExcept("Knife");
+
+            // 2. ถ้ามีของตก (ของที่ไม่ใช่มีด) ให้เสกกล่อง
+            if (droppedItems.Count > 0)
+            {
+                GameObject boxObj = Instantiate(playerDeathBoxPrefab, transform.position, Quaternion.identity);
+                LootBox deathBox = boxObj.GetComponent<LootBox>();
+
+                if (deathBox != null)
+                {
+                    // 3. ยัดของใส่กล่องที่เพิ่งเสกมา
+                    deathBox.SetBoxContents(droppedItems);
+                }
+            }
+        }
+
+        // โค้ดส่วนอื่นๆ ตอนตาย เช่น แสดงหน้าจอ Game Over, เกิดใหม่
+        // gameObject.SetActive(false); 
     }
 
 
@@ -250,6 +280,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+
     public void DealDamage()
     {
         if (attackPoint == null || currentActiveHolder == null || currentWeapon == null) return;
@@ -267,6 +298,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+
     void UpdateUI()
     {
         if (hpSlider != null) hpSlider.value = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0;
@@ -282,20 +314,72 @@ public class PlayerController : MonoBehaviour
 
     void Die()
     {
-        if (currentActiveHolder != null) currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
-        Time.timeScale = 0f;
+        Debug.Log("💀 Player ตายแล้ว! กำลังเริ่มระบบดรอปกล่อง...");
+
+        // 1. เช็คว่าตั้งค่าครบไหม
+        if (playerDeathBoxPrefab == null) Debug.Log("❌ บัค: ลืมใส่ Prefab กล่องใน Inspector!");
+        if (Inventory.Instance == null) Debug.Log("❌ บัค: หา Inventory.Instance ไม่เจอ!");
+
+        if (playerDeathBoxPrefab != null && Inventory.Instance != null)
+        {
+            // 2. ดึงของออกจากกระเป๋า
+            List<InventoryItem> droppedItems = Inventory.Instance.DropAllItemsExcept("Knife");
+            Debug.Log("📦 จำนวนของที่จะดรอป (ไม่รวมมีด): " + droppedItems.Count + " ชิ้น");
+
+            // 3. ถ้ามีของ ค่อยสร้างกล่อง
+            if (droppedItems.Count > 0)
+            {
+                GameObject boxObj = Instantiate(playerDeathBoxPrefab, transform.position, Quaternion.identity);
+                LootBox deathBox = boxObj.GetComponent<LootBox>();
+
+                if (deathBox != null)
+                {
+                    deathBox.SetBoxContents(droppedItems);
+                    Debug.Log("✅ สร้างกล่องและยัดของสำเร็จ!");
+                }
+                else
+                {
+                    Debug.Log("❌ บัค: Prefab กล่องที่คุณใส่มา ไม่มีสคริปต์ LootBox แปะอยู่!");
+                }
+            }
+            else
+            {
+                Debug.Log("⚠️ ไม่สร้างกล่อง เพราะไม่มีของให้ดรอปเลยครับ");
+            }
+        }
+
+        // --- ระบบ Game Over (คงเดิม) ---
+        if (currentActiveHolder != null)
+        {
+            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
+        }
+
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
         this.enabled = false;
+        Time.timeScale = 0f;
     }
 
-    public void RestartGame() { Time.timeScale = 1f; SceneManager.LoadScene(SceneManager.GetActiveScene().name); }
-
-    void OnDrawGizmos()
+    public void RestartGame()
     {
-        if (attackPoint != null) { Gizmos.color = Color.yellow; Gizmos.DrawWireCube(attackPoint.position, attackBoxSize); }
+        Time.timeScale = 1f;
+
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
+        currentHealth = maxHealth;
+        currentStamina = maxStamina;
+        UpdateUI();
+
+        if (currentActiveHolder != null)
+        {
+            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", false);
+        }
+        if (respawnPoint != null)
+        {
+            transform.position = respawnPoint.position;
+        }
+        this.enabled = true;
     }
 
-    // ⭐ ฟังก์ชันสำหรับค้นหาว่าโมเดลไหนเปิดอยู่
     Weapon GetActiveWeapon()
     {
         foreach (Weapon weapon in allWeapons)

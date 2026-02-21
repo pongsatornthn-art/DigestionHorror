@@ -182,6 +182,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyStats
   hp: 100
   damageToPlayer: 10
+  lootBoxPrefab: {fileID: 7459246882786202960, guid: b67d781aabce5db4d87f73b13349347a, type: 3}
+  boxDestroyTime: 10
 --- !u!114 &6622130089230156701
 MonoBehaviour:
   m_ObjectHideFlags: 0

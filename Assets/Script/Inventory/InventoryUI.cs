@@ -43,20 +43,34 @@ public class InventoryUI : MonoBehaviour
 
     void Update()
     {
+        // 1. กด I เพื่อ เปิด/ปิด กระเป๋าและคราฟต์
         if (Input.GetKeyDown(KeyCode.I))
         {
             ToggleInventory();
         }
 
-        // ✅ บังคับให้เมาส์โชว์ตลอดเวลาในทุกเฟรม (กันเหนียว)
+        // 2. ถ้าหน้าต่างเปิดอยู่ แล้วกด Escape ให้ทำการปิด (⭐ เอาปุ่ม E ออกจากตรงนี้ครับ)
+        if (inventoryPanel != null && inventoryPanel.activeSelf)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                ToggleInventory();
+            }
+        }
+
+        // การจัดการเมาส์ (ให้โชว์ตลอดเวลา)
         if (!Cursor.visible)
         {
             Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.Confined; // ให้อยู่ในกรอบหน้าต่างเกม
+            Cursor.lockState = CursorLockMode.Confined;
         }
 
-        // ถ้าเปิดกระเป๋าอยู่ ปลดล็อกให้ขยับอิสระ
+        // ปลดล็อคเมาส์เมื่อเปิด UI
         if (inventoryPanel != null && inventoryPanel.activeSelf)
+        {
+            Cursor.lockState = CursorLockMode.None;
+        }
+        else if (craftingPanel != null && craftingPanel.activeSelf)
         {
             Cursor.lockState = CursorLockMode.None;
         }
@@ -68,13 +82,27 @@ public class InventoryUI : MonoBehaviour
     {
         if (inventoryPanel == null) return;
 
+        // ⭐ 1. เช็คก่อนว่า "กล่อง" เปิดอยู่ไหม?
+        if (ChestUI.instance != null && ChestUI.instance.chestPanel.activeSelf)
+        {
+            // ถ้าเปิดกล่องอยู่ ให้ปิดกล่องด้วย
+            ChestUI.instance.CloseChest();
+
+            // แล้วบังคับปิดหน้าต่างกระเป๋า/คราฟต์ไปพร้อมกันเลย
+            inventoryPanel.SetActive(false);
+            if (craftingPanel != null) craftingPanel.SetActive(false);
+            SetMouseState(false); // ล็อกเมาส์กลับเข้าเกม
+            return; // จบการทำงานทันที
+        }
+
+        // ⭐ 2. การทำงานปกติ (เปิด/ปิด กระเป๋าทั่วไป)
         bool isActive = !inventoryPanel.activeSelf;
         inventoryPanel.SetActive(isActive);
         if (craftingPanel != null) craftingPanel.SetActive(isActive);
 
         SetMouseState(isActive);
 
-        // คืนของอัตโนมัติถ้าปิดหน้าต่าง
+        // คืนของอัตโนมัติถ้าปิดหน้าต่างตอนกำลังคราฟต์ค้างไว้
         if (!isActive && CraftingManager.instance != null)
         {
             CraftingManager.instance.CancelCrafting();

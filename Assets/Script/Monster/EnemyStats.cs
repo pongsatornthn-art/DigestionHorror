@@ -5,23 +5,24 @@ public class EnemyStats : MonoBehaviour
     public int hp = 100;
     public int damageToPlayer = 10;
 
-    private Rigidbody2D rb; // ✅ เพิ่มเพื่อใช้รับแรง Knockback
+    [Header("Drop System")]
+    public GameObject lootBoxPrefab; // ช่องสำหรับลาก Prefab กล่องมาใส่
+    public float boxDestroyTime = 10f; // ตั้งเวลาให้กล่องหายไป (ค่าเริ่มต้น 10 วินาที)
+
+    private Rigidbody2D rb;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>(); // ✅ ดึง Rigidbody2D ของมอนสเตอร์มาใช้
+        rb = GetComponent<Rigidbody2D>();
     }
 
-    // ✅ ปรับให้รับค่า damage, แรงผลัก (force), และทิศทาง (direction)
     public void TakeDamage(int damage, float knockbackForce, Vector2 knockbackDirection)
     {
         hp -= damage;
         Debug.Log(name + " เลือดเหลือ " + hp);
 
-        // ✅ ถ้ามีแรงผลัก ให้มอนสเตอร์กระเด็นไปตามทิศทาง
         if (rb != null && knockbackForce > 0)
         {
-            // ใช้ ForceMode2D.Impulse เพื่อให้เกิดแรงกระแทกทันที
             rb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
         }
 
@@ -30,7 +31,17 @@ public class EnemyStats : MonoBehaviour
 
     void Die()
     {
-        Destroy(gameObject);
+        if (lootBoxPrefab != null)
+        {
+            // 1. สร้างกล่องออกมา และเก็บข้อมูลกล่องใบนั้นไว้ในตัวแปร droppedBox
+            GameObject droppedBox = Instantiate(lootBoxPrefab, transform.position, Quaternion.identity);
+            Debug.Log(name + " ดรอปกล่องแล้ว!");
+
+            // 2. สั่งทำลายกล่องใบนั้นทิ้ง หลังจากเวลาผ่านไปตามที่กำหนด (10 วินาที)
+            Destroy(droppedBox, boxDestroyTime);
+        }
+
+        Destroy(gameObject); // ทำลายตัวมอนสเตอร์ทิ้ง
     }
 
     void OnCollisionEnter2D(Collision2D collision)
