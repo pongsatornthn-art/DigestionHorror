@@ -117,11 +117,12 @@ public class LootBox : MonoBehaviour
 
     void OnDestroy()
     {
-        if (ChestUI.instance != null && ChestUI.instance.chestPanel.activeSelf)
+        // เติมเงื่อนไขเช็คว่าหน้าต่าง != null (ยังไม่ถูกลบ) ก่อนเข้าไปสั่งปิด
+        if (ChestUI.instance != null && ChestUI.instance.chestPanel != null && ChestUI.instance.chestPanel.activeSelf)
         {
             ChestUI.instance.CloseChest();
 
-            if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)
+            if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel != null && InventoryUI.instance.inventoryPanel.activeSelf)
             {
                 InventoryUI.instance.ToggleInventory();
             }

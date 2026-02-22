@@ -37,5 +37,9 @@ public class ItemData : ScriptableObject
     public float heavyKnockback = 6f;
     public float heavyAttackCooldown = 1.2f; // ⭐ เพิ่มใหม่: คูลดาวน์โจมตีหนัก
 
+    [Header("Durability")]
     public float maxDurability;
+
+    [Header("Economy (ระบบเงิน)")]
+    public int price = 50; // ตัวเลขราคาของไอเทมชิ้นนี้
 }

@@ -1,20 +1,24 @@
 ﻿using UnityEngine;
 
-public class EnemySpirit : MonoBehaviour
+public partial class EnemySpirit : MonoBehaviour
 {
     [Header("Target")]
     public Transform player;
 
     [Header("Settings")]
-    public float moveSpeed = 2f;    // ความเร็วปกติ
-    public float fleeSpeed = 6f;    // ความเร็วตอนหนี
-    public float damage = 15f;      // ดาเมจ Digestion
+    public float moveSpeed = 2f;
+    public float fleeSpeed = 6f;
+    public float damage = 15f;
 
-    [Header("ระยะมองเห็น")]
-    public float detectionRadius = 8f; // ⭐ ต้องเข้ามาใกล้กว่านี้ ผีถึงจะเริ่มไล่
+    [Header("Vision Settings")]
+    public float detectionRadius = 8f; // ระยะวงกลมรอบตัว
+    [Range(0, 360)]
+    public float viewAngle = 90f;      // องศาการมองเห็น (กรวยสายตา)
+    public LayerMask obstacleMask;    // เลเยอร์ของกำแพง (ถ้ามี เพื่อไม่ให้มองทะลุ)
 
     private bool isScaredOfLight = false;
-    private float scaredTimer = 0f; // ตัวช่วยนับเวลาหนี (กันกระตุก)
+    private float scaredTimer = 0f;
+    private bool canSeePlayer = false;
 
     void Start()
     {
@@ -29,66 +33,112 @@ public class EnemySpirit : MonoBehaviour
     {
         if (player == null) return;
 
-        // คำนวณระยะห่าง
-        float distance = Vector2.Distance(transform.position, player.position);
+        // เช็คการมองเห็น
+        canSeePlayer = CheckPlayerInFOV();
 
-        // กรณี 1: โดนไฟฉาย (สำคัญสุด ต้องหนีก่อน)
+        // การตัดสินใจของ AI
         if (isScaredOfLight || scaredTimer > 0)
         {
-            transform.position = Vector2.MoveTowards(transform.position, player.position, -fleeSpeed * Time.deltaTime);
-            scaredTimer -= Time.deltaTime; // ลดเวลาหนี
+            // วิ่งหนีออกจาก Player
+            Vector2 fleeDir = (Vector2)transform.position - (Vector2)player.position;
+            transform.Translate(fleeDir.normalized * fleeSpeed * Time.deltaTime, Space.World);
+            scaredTimer -= Time.deltaTime;
         }
-        // กรณี 2: ไม่โดนไฟ แต่ผู้เล่นอยู่ในระยะ (ไล่ล่า)
-        else if (distance < detectionRadius)
+        else if (canSeePlayer)
         {
+            // ถ้าเห็น Player ให้ไล่ล่า
             transform.position = Vector2.MoveTowards(transform.position, player.position, moveSpeed * Time.deltaTime);
-        }
-        // กรณี 3: อยู่ไกลเกินไป (ยืนนิ่งๆ)
-        else
-        {
-            // ไม่ทำอะไร หรือจะใส่ให้เดินเล่นไปมาก็ได้
+
+            // หมุนหน้าไปทางที่เดิน (เพื่อให้กรวยสายตาหมุนตาม)
+            Vector2 moveDir = (Vector2)player.position - (Vector2)transform.position;
+            float angle = Mathf.Atan2(moveDir.y, moveDir.x) * Mathf.Rad2Deg - 90f;
+            transform.rotation = Quaternion.Euler(0, 0, angle);
         }
 
-        isScaredOfLight = false; // รีเซ็ตค่าทุกเฟรม รอรับ trigger ใหม่
+        isScaredOfLight = false;
     }
 
-    // ฟังก์ชันวาดวงกลมใน Scene ให้เห็นระยะ (ตอนแก้จะได้กะถูก)
+    // ฟังก์ชันเช็คว่าผู้เล่นอยู่ในกรวยสายตาหรือไม่
+    bool CheckPlayerInFOV()
+    {
+        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+
+        if (distanceToPlayer < detectionRadius)
+        {
+            Vector2 dirToPlayer = (player.position - transform.position).normalized;
+            // เช็คว่ามุมระหว่าง "หน้าของศัตรู" กับ "ตัวผู้เล่น" อยู่ในองศาที่กำหนดไหม
+            if (Vector2.Angle(transform.up, dirToPlayer) < viewAngle / 2f)
+            {
+                // (Optional) เช็ค Raycast เพื่อไม่ให้มองทะลุกำแพง
+                if (!Physics2D.Raycast(transform.position, dirToPlayer, distanceToPlayer, obstacleMask))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // วาด Gizmos เพื่อดูระยะในหน้า Scene
     void OnDrawGizmosSelected()
     {
+        // วาดวงกลมระยะตรวจจับ
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, detectionRadius);
+
+        // วาดเส้นกรวยสายตา
+        Vector3 viewAngleA = DirFromAngle(-viewAngle / 2, false);
+        Vector3 viewAngleB = DirFromAngle(viewAngle / 2, false);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(transform.position, transform.position + viewAngleA * detectionRadius);
+        Gizmos.DrawLine(transform.position, transform.position + viewAngleB * detectionRadius);
     }
 
-    // ---------------------------------------------------------
-    // ส่วนของการชน (Collision / Trigger)
-    // ---------------------------------------------------------
-
-    public void Scare()
+    public Vector3 DirFromAngle(float angleInDegrees, bool angleIsGlobal)
     {
-        isScaredOfLight = true;
-        scaredTimer = 0.5f; // ให้หนีต่ออีก 0.5 วิ
+        if (!angleIsGlobal)
+        {
+            angleInDegrees += transform.eulerAngles.z;
+        }
+        return new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), Mathf.Cos(angleInDegrees * Mathf.Deg2Rad), 0);
+    }
+
+    // --- ส่วนของ Flashlight (คงเดิมตามที่คุณเขียนมา) ---
+    public void Scare() { isScaredOfLight = true; scaredTimer = 0.5f; }
+    void OnTriggerStay2D(Collider2D other)
+    {
+        if (other.CompareTag("FlashlightLight") || other.CompareTag("Flashlight"))
+        {
+            isScaredOfLight = true;
+            scaredTimer = 0.2f;
+        }
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        // ชน Player -> เพิ่มค่า Digestion
+        // 1. เช็คว่าชนกับ Player หรือไม่
         if (other.CompareTag("Player"))
         {
+            // ทำความเสียหายผ่านระบบ Digestion (ระบบเดิมของคุณ)
             if (DigestionSystem.instance != null)
             {
                 DigestionSystem.instance.IncreaseDigestion(damage);
             }
-        }
-    }
 
-    // ใช้ OnTriggerStay เพื่อเช็คตลอดเวลาที่แสงแช่อยู่
-    void OnTriggerStay2D(Collider2D other)
-    {
-        // ชนแสงไฟ (ต้องตั้ง Tag ของแสงไฟว่า FlashlightLight หรือ Flashlight ให้ตรงกันนะ)
-        if (other.CompareTag("FlashlightLight") || other.CompareTag("Flashlight"))
-        {
-            isScaredOfLight = true;
-            scaredTimer = 0.2f; // รีเซ็ตเวลาหนีเรื่อยๆ ตราบใดที่ยังโดนแสง
+            // 2. ทำความเสียหายต่อ HP ของ Player โดยตรง
+            PlayerController playerScript = other.GetComponent<PlayerController>();
+            if (playerScript != null)
+            {
+                // กำหนดค่าความเสียหายที่ต้องการ (ตัวอย่างเช่น 10)
+                int hpDamage = 10;
+                playerScript.PlayerTakeDamage(hpDamage);
+
+                Debug.Log("Enemy Spirit โจมตีผู้เล่นและหายไป!");
+            }
+
+            // 3. ทำลาย Enemy Spirit ทันทีเมื่อโจมตีสำเร็จ
+            Destroy(gameObject);
         }
     }
 }

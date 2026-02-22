@@ -3,37 +3,38 @@
 public class RockProjectile : MonoBehaviour
 {
     [Header("Settings")]
-    public float damage = 10f;
-    public float lifeTime = 3f; // ⭐ หินจะหายไปเองภายใน 3 วินาทีถ้าไม่ชนอะไร
+    public int damage = 10; // เปลี่ยนเป็น int เพื่อให้ตรงกับ PlayerTakeDamage
+    public float lifeTime = 3f;
 
     void Start()
     {
-        // สั่งทำลายตัวเองล่วงหน้าตามเวลาที่ตั้งไว้
         Destroy(gameObject, lifeTime);
     }
 
     void OnCollisionEnter2D(Collision2D other)
     {
-        // 1. ถ้าชนผู้เล่น (Player)
         if (other.gameObject.CompareTag("Player"))
         {
+            // 1. ลดเลือดผู้เล่นผ่านระบบหลัก
+            PlayerController player = other.gameObject.GetComponent<PlayerController>();
+            if (player != null)
+            {
+                player.PlayerTakeDamage(damage);
+                Debug.Log("หินกระแทกผู้เล่น! ลด HP: " + damage);
+            }
+
+            // 2. ระบบ Digestion (ถ้ายังมีอยู่)
             if (DigestionSystem.instance != null)
             {
-                DigestionSystem.instance.IncreaseDigestion(damage);
-                Debug.Log("โดนหินปาเข้าเต็มๆ!");
+                DigestionSystem.instance.IncreaseDigestion((float)damage);
             }
-            Destroy(gameObject); // ชนแล้วหายไปทันที
+
+            Destroy(gameObject);
         }
-        // 2. ถ้าชนมอนสเตอร์ (Enemy)
-        else if (other.gameObject.CompareTag("Enemy"))
+        else if (!other.gameObject.CompareTag("Enemy"))
         {
-            // ไม่ต้องทำอะไร ปล่อยให้หินบินผ่านไป (กันหินระเบิดคามือเด็ก)
-            // เราไม่สั่ง Destroy ตรงนี้เพื่อให้มันบินทะลุพวกเดียวกันได้
-        }
-        // 3. ถ้าชนอย่างอื่น (เช่น กำแพง)
-        else
-        {
-            Destroy(gameObject); // ชนกำแพงแล้วแตกทันที
+            // ชนกำแพงหรือสิ่งกีดขวางอื่นๆ
+            Destroy(gameObject);
         }
     }
 }

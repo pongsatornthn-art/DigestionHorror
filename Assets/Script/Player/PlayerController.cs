@@ -2,10 +2,14 @@
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
     public static PlayerController instance;
+
+    // ⭐ [เพิ่มจากเพื่อน] เรียกใช้ PlayerStatus
+    private PlayerStatus status;
 
     [Header("References")]
     public Camera cam;
@@ -52,7 +56,6 @@ public class PlayerController : MonoBehaviour
     public Transform attackPoint;
     public Vector2 attackBoxSize = new Vector2(1.5f, 1f);
     public LayerMask enemyLayers;
-    // public float attackRate = 2f; (ไม่ได้ใช้แล้ว เพราะดึงจาก ItemData)
     private float nextAttackTime = 0f;
 
     [Header("Game Over & Sound")]
@@ -65,6 +68,14 @@ public class PlayerController : MonoBehaviour
     [Header("Death Settings")]
     public GameObject playerDeathBoxPrefab;
     public Transform respawnPoint;
+
+    [Header("Knockback Settings")]
+    public float knockbackDuration = 0.2f; // ระยะเวลาที่ควบคุมตัวไม่ได้เมื่อโดนตี
+    private bool isKnockbacked = false;
+
+    [Header("Economy")]
+    public int currentMoney = 500;
+    public TextMeshProUGUI moneyText;
 
     void Awake() => instance = this;
 
@@ -84,11 +95,22 @@ public class PlayerController : MonoBehaviour
 
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Confined;
+
+        // ⭐ [เพิ่มจากเพื่อน] พยายามดึงสคริปต์ PlayerStatus (ถ้ามี)
+        status = GetComponent<PlayerStatus>();
     }
 
     void Update()
     {
-        if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)
+        // 1. ถ้าเปิดกระเป๋าอยู่ หรือกำลังกระเด็น ห้ามขยับ
+        if ((InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
+        {
+            movement = Vector2.zero;
+            return;
+        }
+
+        // ⭐ [เพิ่มจากเพื่อน] ถ้าระบบบอกว่าโดนล็อคขา ก็ห้ามขยับ
+        if (status != null && status.isRooted)
         {
             movement = Vector2.zero;
             return;
@@ -102,7 +124,8 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) return;
+        // ⭐ ถักกระเด็นอยู่ ให้ปล่อยให้ Physics ทำงานไป (ห้ามขยับเดินเอง)
+        if (isKnockbacked || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
 
         rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
 
@@ -120,16 +143,52 @@ public class PlayerController : MonoBehaviour
             legsTransform.rotation = Quaternion.Lerp(legsTransform.rotation, Quaternion.Euler(0, 0, angleLegs), 0.2f);
         }
     }
+
+    // ⭐ [เพิ่ม] ฟังก์ชันสั่งให้ผู้เล่นกระเด็นถอยหลัง
+    public void ApplyKnockback(Vector2 force)
+    {
+        if (isKnockbacked) return; // ป้องกันโดนรัวๆ
+
+        StopAllCoroutines();
+        StartCoroutine(KnockbackRoutine(force));
+    }
+
+    private System.Collections.IEnumerator KnockbackRoutine(Vector2 force)
+    {
+        isKnockbacked = true;
+        rb.linearVelocity = Vector2.zero;
+        rb.AddForce(force, ForceMode2D.Impulse);
+
+        yield return new WaitForSeconds(knockbackDuration);
+
+        isKnockbacked = false;
+        rb.linearVelocity = Vector2.zero;
+    }
+
+    public void PlayerTakeDamage(int dmg)
+    {
+        currentHealth = Mathf.Max(0, currentHealth - dmg);
+        UpdateUI();
+        if (currentHealth <= 0) Die();
+    }
+
     public void PlayerDie()
     {
-        Debug.Log("Player ตายแล้ว!");
+        // ... (โค้ดเก่าของคุณที่ซ้ำซ้อนกับ Die() ผมลบออกให้เพื่อความสะอาดนะครับ ระบบของตกย้ายไปรวมใน Die() หมดแล้ว)
+    }
+
+    void Die()
+    {
+        Debug.Log("💀 Player ตายแล้ว! กำลังเริ่มระบบดรอปกล่อง...");
+
+        if (playerDeathBoxPrefab == null) Debug.Log("❌ บัค: ลืมใส่ Prefab กล่องใน Inspector!");
+        if (Inventory.Instance == null) Debug.Log("❌ บัค: หา Inventory.Instance ไม่เจอ!");
 
         if (playerDeathBoxPrefab != null && Inventory.Instance != null)
         {
-            // 1. สั่งดึงของทุกอย่างออกมา (ยกเว้นมีด ให้เช็คชื่อ "Knife" ให้ตรงกับใน ItemData)
             List<InventoryItem> droppedItems = Inventory.Instance.DropAllItemsExcept("Knife");
+            Debug.Log("📦 จำนวนของที่จะดรอป (ไม่รวมมีด): " + droppedItems.Count + " ชิ้น");
 
-            // 2. ถ้ามีของตก (ของที่ไม่ใช่มีด) ให้เสกกล่อง
             if (droppedItems.Count > 0)
             {
                 GameObject boxObj = Instantiate(playerDeathBoxPrefab, transform.position, Quaternion.identity);
@@ -137,21 +196,51 @@ public class PlayerController : MonoBehaviour
 
                 if (deathBox != null)
                 {
-                    // 3. ยัดของใส่กล่องที่เพิ่งเสกมา
                     deathBox.SetBoxContents(droppedItems);
+                    Debug.Log("✅ สร้างกล่องและยัดของสำเร็จ!");
                 }
             }
         }
 
-        // โค้ดส่วนอื่นๆ ตอนตาย เช่น แสดงหน้าจอ Game Over, เกิดใหม่
-        // gameObject.SetActive(false); 
+        if (currentActiveHolder != null)
+        {
+            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
+        }
+
+        if (gameOverPanel != null) gameOverPanel.SetActive(true);
+        this.enabled = false;
+        Time.timeScale = 0f;
     }
 
+    public void RestartGame()
+    {
+        Time.timeScale = 1f;
+
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
+        currentHealth = maxHealth;
+        currentStamina = maxStamina;
+        UpdateUI();
+
+        if (currentActiveHolder != null)
+        {
+            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", false);
+        }
+        if (respawnPoint != null)
+        {
+            transform.position = respawnPoint.position;
+        }
+        this.enabled = true;
+        isKnockbacked = false; // รีเซ็ตสถานะกระเด็นตอนเกิดใหม่ด้วย
+    }
+
+    // ==========================================
+    // ส่วนล่างนี้คือระบบเดิมของคุณที่เพอร์เฟกต์อยู่แล้ว
+    // ==========================================
 
     public void EquipWeapon(ItemData newItem)
     {
         currentWeapon = newItem;
-
 
         if (knifeHolder) knifeHolder.SetActive(false);
         if (axeHolder) axeHolder.SetActive(false);
@@ -210,7 +299,6 @@ public class PlayerController : MonoBehaviour
 
     void HandleCombatInput()
     {
-        // เช็คคูลดาวน์ก่อนเลย
         if (Time.time >= nextAttackTime && currentWeapon != null && currentWeapon.itemType == ItemType.Weapon)
         {
             if (Input.GetMouseButtonDown(0)) PerformAttack(true);
@@ -241,11 +329,8 @@ public class PlayerController : MonoBehaviour
             }
 
             nextAttackTime = Time.time + 0.3f;
-
             return;
         }
-
-
 
         float cost = isLight ? currentWeapon.staminaCost : currentWeapon.heavyStaminaCost;
         if (currentStamina < cost)
@@ -280,7 +365,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-
     public void DealDamage()
     {
         if (attackPoint == null || currentActiveHolder == null || currentWeapon == null) return;
@@ -298,86 +382,11 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-
     void UpdateUI()
     {
         if (hpSlider != null) hpSlider.value = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0;
         if (staminaSlider != null) staminaSlider.value = (maxStamina > 0) ? currentStamina / maxStamina : 0;
-    }
-
-    public void PlayerTakeDamage(int dmg)
-    {
-        currentHealth = Mathf.Max(0, currentHealth - dmg);
-        UpdateUI();
-        if (currentHealth <= 0) Die();
-    }
-
-    void Die()
-    {
-        Debug.Log("💀 Player ตายแล้ว! กำลังเริ่มระบบดรอปกล่อง...");
-
-        // 1. เช็คว่าตั้งค่าครบไหม
-        if (playerDeathBoxPrefab == null) Debug.Log("❌ บัค: ลืมใส่ Prefab กล่องใน Inspector!");
-        if (Inventory.Instance == null) Debug.Log("❌ บัค: หา Inventory.Instance ไม่เจอ!");
-
-        if (playerDeathBoxPrefab != null && Inventory.Instance != null)
-        {
-            // 2. ดึงของออกจากกระเป๋า
-            List<InventoryItem> droppedItems = Inventory.Instance.DropAllItemsExcept("Knife");
-            Debug.Log("📦 จำนวนของที่จะดรอป (ไม่รวมมีด): " + droppedItems.Count + " ชิ้น");
-
-            // 3. ถ้ามีของ ค่อยสร้างกล่อง
-            if (droppedItems.Count > 0)
-            {
-                GameObject boxObj = Instantiate(playerDeathBoxPrefab, transform.position, Quaternion.identity);
-                LootBox deathBox = boxObj.GetComponent<LootBox>();
-
-                if (deathBox != null)
-                {
-                    deathBox.SetBoxContents(droppedItems);
-                    Debug.Log("✅ สร้างกล่องและยัดของสำเร็จ!");
-                }
-                else
-                {
-                    Debug.Log("❌ บัค: Prefab กล่องที่คุณใส่มา ไม่มีสคริปต์ LootBox แปะอยู่!");
-                }
-            }
-            else
-            {
-                Debug.Log("⚠️ ไม่สร้างกล่อง เพราะไม่มีของให้ดรอปเลยครับ");
-            }
-        }
-
-        // --- ระบบ Game Over (คงเดิม) ---
-        if (currentActiveHolder != null)
-        {
-            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
-        }
-
-        if (gameOverPanel != null) gameOverPanel.SetActive(true);
-        this.enabled = false;
-        Time.timeScale = 0f;
-    }
-
-    public void RestartGame()
-    {
-        Time.timeScale = 1f;
-
-        if (gameOverPanel != null) gameOverPanel.SetActive(false);
-
-        currentHealth = maxHealth;
-        currentStamina = maxStamina;
-        UpdateUI();
-
-        if (currentActiveHolder != null)
-        {
-            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", false);
-        }
-        if (respawnPoint != null)
-        {
-            transform.position = respawnPoint.position;
-        }
-        this.enabled = true;
+        if (moneyText != null) moneyText.text = currentMoney.ToString();
     }
 
     Weapon GetActiveWeapon()

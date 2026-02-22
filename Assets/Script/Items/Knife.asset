@@ -17,7 +17,7 @@ MonoBehaviour:
   description: 
   descriptionImage: {fileID: -25296008638364050, guid: eaff258778bc3da4ba33b84051ec9dbd, type: 3}
   isStackable: 1
-  maxStack: 2
+  maxStack: 1
   itemType: 1
   equippedSprite: {fileID: 5921444538186595469, guid: 699a819c16b5da44da2c21a02ba70c69, type: 3}
   weaponAnimatorOverride: {fileID: 22100000, guid: ec7740c7892b46b4fbd8b2bd7c514a7a, type: 2}
@@ -30,4 +30,5 @@ MonoBehaviour:
   heavyStaminaCost: 0
   heavyKnockback: 5
   heavyAttackCooldown: 1.2
-  maxDurability: 100
+  maxDurability: 10000
+  price: 50
