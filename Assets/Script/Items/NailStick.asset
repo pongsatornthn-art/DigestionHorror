@@ -26,8 +26,12 @@ MonoBehaviour:
   staminaCost: 10
   knockback: 3
   lightAttackCooldown: 0.5
-  heavyDamage: 20
+  heavyDamage: 15
   heavyStaminaCost: 25
   heavyKnockback: 6
   heavyAttackCooldown: 1.2
-  maxDurability: 100
+  maxDurability: 1000
+  price: 50
+  digestionReduceAmount: 20
+  digestionSlowMultiplier: 0.5
+  totemEffectDuration: 60

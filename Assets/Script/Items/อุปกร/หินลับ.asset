@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f363b3cc3d5c1b3458c8457fe9ddbae4, type: 3}
+  m_Name: "\u0E2B\u0E34\u0E19\u0E25\u0E31\u0E1A"
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemName: whetstone
+  icon: {fileID: -6276408390063833456, guid: 5e92ac573584a4d4d8762c86f520ae72, type: 3}
+  description: 
+  descriptionImage: {fileID: 0}
+  isStackable: 1
+  maxStack: 5
+  itemType: 0
+  equippedSprite: {fileID: 0}
+  weaponAnimatorOverride: {fileID: 0}
+  weaponID: 0
+  damage: 10
+  staminaCost: 10
+  knockback: 3
+  lightAttackCooldown: 0.5
+  heavyDamage: 20
+  heavyStaminaCost: 25
+  heavyKnockback: 6
+  heavyAttackCooldown: 1.2
+  maxDurability: 0
+  price: 50
+  digestionReduceAmount: 20
+  digestionSlowMultiplier: 0.5
+  totemEffectDuration: 60

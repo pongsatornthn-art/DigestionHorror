@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Knife
   icon: {fileID: -25296008638364050, guid: eaff258778bc3da4ba33b84051ec9dbd, type: 3}
-  description: 
-  descriptionImage: {fileID: -25296008638364050, guid: eaff258778bc3da4ba33b84051ec9dbd, type: 3}
+  description: Knife
+  descriptionImage: {fileID: -2925785173431083260, guid: 0cff64ae138120c4dad9e42f99c4604f, type: 3}
   isStackable: 1
   maxStack: 1
   itemType: 1
@@ -29,6 +29,9 @@ MonoBehaviour:
   heavyDamage: 20
   heavyStaminaCost: 0
   heavyKnockback: 5
-  heavyAttackCooldown: 1.2
+  heavyAttackCooldown: 1
   maxDurability: 10000
   price: 50
+  digestionReduceAmount: 20
+  digestionSlowMultiplier: 0.5
+  totemEffectDuration: 60

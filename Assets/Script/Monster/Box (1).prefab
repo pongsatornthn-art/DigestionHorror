@@ -172,3 +172,5 @@ MonoBehaviour:
     amount: 0
   - itemData: {fileID: 0}
     amount: 0
+  destroyAfterOpen: 0
+  interactRange: 2

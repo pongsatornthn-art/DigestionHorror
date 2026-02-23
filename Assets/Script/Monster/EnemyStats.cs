@@ -51,12 +51,12 @@ public class EnemyStats : MonoBehaviour
             PlayerController player = collision.gameObject.GetComponent<PlayerController>();
             if (player != null)
             {
-                // ลดเลือดผู้เล่น
-                player.PlayerTakeDamage(10);
+                // ⭐ ตรงนี้แหละครับที่ผมแก้ให้แล้ว! 
+                // มันจะดึงค่าจากช่อง Damage To Player ใน Inspector มาลดเลือดผู้เล่นเลยครับ
+                player.PlayerTakeDamage(damageToPlayer);
 
-                // ⭐ สั่งให้ผู้เล่นกระเด็นถอยหลัง (คำนวณทิศทางจากมอนสเตอร์ไปหาผู้เล่น)
                 Vector2 knockbackDir = (collision.transform.position - transform.position).normalized;
-                float force = 10f; // ความแรงที่กระเด็น
+                float force = 10f;
                 player.ApplyKnockback(knockbackDir * force);
             }
         }

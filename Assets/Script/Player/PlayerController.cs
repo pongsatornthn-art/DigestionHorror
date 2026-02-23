@@ -299,10 +299,33 @@ public class PlayerController : MonoBehaviour
 
     void HandleCombatInput()
     {
-        if (Time.time >= nextAttackTime && currentWeapon != null && currentWeapon.itemType == ItemType.Weapon)
+        // ถ้าไม่ได้ถืออะไรเลย ให้ข้ามไป
+        if (currentWeapon == null) return;
+
+        // 1. ถ้าถือ "อาวุธ" -> คลิกซ้ายตีเบา / คลิกขวาตีหนัก
+        if (currentWeapon.itemType == ItemType.Weapon)
         {
-            if (Input.GetMouseButtonDown(0)) PerformAttack(true);
-            else if (Input.GetMouseButtonDown(1)) PerformAttack(false);
+            if (Time.time >= nextAttackTime)
+            {
+                if (Input.GetMouseButtonDown(0)) PerformAttack(true);
+                else if (Input.GetMouseButtonDown(1)) PerformAttack(false);
+            }
+        }
+        // 2. ถ้าถือ "ยา (Consumable)" -> คลิกซ้ายเพื่อกิน/ดื่ม
+        else if (currentWeapon.itemType == ItemType.Consumable)
+        {
+            if (Input.GetMouseButtonDown(0)) // 0 คือคลิกซ้าย
+            {
+                ConsumeItem();
+            }
+        }
+        // 3. ถ้าถือ "โทเทม (Totem)" -> คลิกซ้ายเพื่อปักลงพื้นใช้งาน
+        else if (currentWeapon.itemType == ItemType.Totem)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                UseTotem();
+            }
         }
     }
 
@@ -400,4 +423,45 @@ public class PlayerController : MonoBehaviour
         }
         return null;
     }
+    // ==========================================
+    // ⭐ ระบบกดใช้ไอเทมจากหน้าจอ (ยา & โทเทม)
+    // ==========================================
+
+    void ConsumeItem()
+    {
+        if (currentWeapon == null || currentWeapon.itemType != ItemType.Consumable) return;
+
+        // 1. เรียกใช้ระบบลดย่อยอาหาร
+        if (DigestionSystem.instance != null)
+        {
+            DigestionSystem.instance.DecreaseDigestion(currentWeapon.digestionReduceAmount);
+            Debug.Log($"🍷 ซดยา {currentWeapon.itemName} แล้ว! ลดค่า Digestion ไป: {currentWeapon.digestionReduceAmount}");
+        }
+
+        // 2. สั่งลบไอเทมออกจากกระเป๋า
+        if (Inventory.instance != null)
+        {
+            Inventory.instance.RemoveItem(currentWeapon);
+            // (ถ้าสคริปต์ Inventory ของคุณบังคับให้ใส่จำนวนชิ้นด้วย ให้แก้เป็น: Inventory.instance.RemoveItem(currentWeapon, 1); นะครับ)
+        }
+    }
+
+    void UseTotem()
+    {
+        if (currentWeapon == null || currentWeapon.itemType != ItemType.Totem) return;
+
+        // 1. เรียกใช้บัฟหน่วงเวลา
+        if (DigestionSystem.instance != null)
+        {
+            DigestionSystem.instance.ApplyTotemBuff(currentWeapon.digestionSlowMultiplier, currentWeapon.totemEffectDuration);
+            Debug.Log($"🗿 ปักโทเทม {currentWeapon.itemName} แล้ว! ค่าจะเพิ่มช้าลง {currentWeapon.totemEffectDuration} วินาที");
+        }
+
+        // 2. สั่งลบไอเทมออกจากกระเป๋า
+        if (Inventory.instance != null)
+        {
+            Inventory.instance.RemoveItem(currentWeapon);
+        }
+    }
+
 }

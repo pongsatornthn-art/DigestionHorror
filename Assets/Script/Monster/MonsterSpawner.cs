@@ -11,8 +11,12 @@ public class MonsterSpawner : MonoBehaviour
     public int baseSpawnAmount = 1;
 
     [Header("Spawn Area Settings")]
-    // ✅ เพิ่มตัวแปรนี้เพื่อกำหนดความกว้างในการกระจายตัว
     public float spawnRadius = 5f;
+
+    // ⭐ 1. เพิ่มตัวแปรสำหรับตรวจจับ Safe Zone
+    [Header("Safe Zone Protection")]
+    public LayerMask safeZoneLayer; // กำหนด Layer ของ SafeZone
+    public float monsterCheckRadius = 0.5f; // รัศมีตัวมอนสเตอร์เอาไว้เช็คชน (ปรับตามขนาดมอนสเตอร์)
 
     private float timer;
     private List<GameObject> spawnedMonsters = new List<GameObject>();
@@ -45,16 +49,42 @@ public class MonsterSpawner : MonoBehaviour
         {
             int randomIndex = Random.Range(0, monsterPrefabs.Length);
 
-            // ✅ เปลี่ยนวิธีคำนวณจุดเกิดให้กระจายเป็นวงกลมรอบจุดสปาวน์
-            Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
-            Vector3 spawnPos = transform.position + new Vector3(randomCircle.x, randomCircle.y, 0);
+            // ⭐ 2. เพิ่มระบบสุ่มหาจุดเกิดที่ "ไม่ทับ" Safe Zone
+            Vector3 finalSpawnPos = Vector3.zero;
+            bool isValidPosition = false;
+            int maxAttempts = 10; // สุ่มหาจุดสูงสุด 10 ครั้ง (กันลูปค้างถ้าตั้ง Spawner กลางบ้าน)
 
-            GameObject newMonster = Instantiate(monsterPrefabs[randomIndex], spawnPos, Quaternion.identity);
-            spawnedMonsters.Add(newMonster);
+            for (int i = 0; i < maxAttempts; i++)
+            {
+                Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
+                Vector3 checkPos = transform.position + new Vector3(randomCircle.x, randomCircle.y, 0);
+
+                // ตรวจสอบว่าจุดเช็คนี้ ไปชนกับ Layer SafeZone หรือไม่
+                Collider2D hit = Physics2D.OverlapCircle(checkPos, monsterCheckRadius, safeZoneLayer);
+
+                // ถ้าไม่ชนอะไรเลย (hit == null) แปลว่าจุดนี้ปลอดภัย!
+                if (hit == null)
+                {
+                    finalSpawnPos = checkPos;
+                    isValidPosition = true;
+                    break; // หยุดสุ่ม
+                }
+            }
+
+            // ถ้าสุ่มได้ตำแหน่งที่ถูกต้อง ค่อยเสกมอนสเตอร์
+            if (isValidPosition)
+            {
+                GameObject newMonster = Instantiate(monsterPrefabs[randomIndex], finalSpawnPos, Quaternion.identity);
+                spawnedMonsters.Add(newMonster);
+            }
+            else
+            {
+                // ถ้าสุ่ม 10 ครั้งแล้วยังลง Safe Zone ตลอด ให้ข้ามการเกิดตัวนี้ไปก่อน
+                break;
+            }
         }
     }
 
-    // ฟังก์ชันช่วยวาดขอบเขตในหน้า Scene (เส้นสีเขียว) เพื่อให้คุณกะระยะได้ง่ายขึ้น
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.green;

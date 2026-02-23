@@ -6,15 +6,15 @@ public class ShopUI : MonoBehaviour
 {
     public static ShopUI instance;
 
-    [Header("UI References (ลาก UI มาใส่ให้ตรง)")]
+    [Header("UI References")]
     public GameObject shopPanel;
     public Transform itemsParent;
 
-    [Header("NPC UI (ฝั่งซ้าย)")]
+    [Header("NPC UI (Left Side)")]
     public Image npcPortraitImage;
     public TextMeshProUGUI npcDialogueText;
 
-    [Header("Player Economy UI (ฝั่งขวาบน)")]
+    [Header("Player Economy UI (Top Right)")]
     public TextMeshProUGUI playerMoneyText;
 
     private ShopSlot[] slots;
@@ -38,7 +38,7 @@ public class ShopUI : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Escape))
             {
-                CloseShop(); // เรียกคำสั่งปิดตัวเดียวพอ เดี๋ยวระบบจัดการปิดทุกอย่างให้เอง
+                CloseShop();
             }
         }
     }
@@ -55,14 +55,14 @@ public class ShopUI : MonoBehaviour
         UpdateUI();
     }
 
-    // ⭐ ฟังก์ชันปิดร้านค้า (เวอร์ชันสมบูรณ์ ปิดหมดทุกอย่าง)
+    // ⭐ Close Shop and other panels
     public void CloseShop()
     {
-        // 1. ปิดหน้าร้านค้า
+        // 1. Close Shop UI
         if (shopPanel != null) shopPanel.SetActive(false);
         currentNPC = null;
 
-        // 2. ปิดกระเป๋าและคราฟต์
+        // 2. Close Inventory and Crafting UI
         if (InventoryUI.instance != null)
         {
             if (InventoryUI.instance.inventoryPanel != null)
@@ -114,17 +114,17 @@ public class ShopUI : MonoBehaviour
                 UpdateUI();
                 PlayerController.instance.SendMessage("UpdateUI");
 
-                if (npcDialogueText != null) npcDialogueText.text = "ขอบคุณที่อุดหนุนนะ!";
-                Debug.Log($"🛒 ซื้อ {itemToBuy.itemName} สำเร็จ!");
+                if (npcDialogueText != null) npcDialogueText.text = "Thanks for your purchase!";
+                Debug.Log($"🛒 Successfully bought {itemToBuy.itemName}!");
             }
             else
             {
-                if (npcDialogueText != null) npcDialogueText.text = "กระเป๋าของนายเต็มแล้วนะ!";
+                if (npcDialogueText != null) npcDialogueText.text = "Your inventory is full!";
             }
         }
         else
         {
-            if (npcDialogueText != null) npcDialogueText.text = "เงินไม่พอนะไอ้หนุ่ม!";
+            if (npcDialogueText != null) npcDialogueText.text = "You don't have enough money for that, kid.";
         }
     }
 }

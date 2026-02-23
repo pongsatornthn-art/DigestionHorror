@@ -22,20 +22,16 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        // ถ้าไม่มีไอเทม ไม่ต้องโชว์อะไร
         if (item == null) return;
 
-        // เช็คว่าระบบ Tooltip พร้อมใช้งานไหม
         if (item.descriptionImage != null && ItemTooltipImage.instance != null)
         {
-            // สั่งโชว์รูปคำอธิบาย
             ItemTooltipImage.instance.ShowDescriptionImage(item.descriptionImage);
         }
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        // เมื่อเมาส์ออก ให้สั่งปิด Tooltip
         if (ItemTooltipImage.instance != null)
         {
             ItemTooltipImage.instance.ClearDescriptionImage();
@@ -43,7 +39,7 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     }
 
     // ==========================================
-    // ⭐ แก้ไขส่วนนี้: จัดการไอเทม (แก้บั๊กรูปขาว + ตัวเลข)
+    // ⭐ จัดการไอเทม
     // ==========================================
 
     public void AddItem(ItemData newItem, int amount, bool isHotbar)
@@ -51,26 +47,21 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         item = newItem;
         canEquip = isHotbar;
 
-        // --- 1. จัดการรูปภาพ (Icon) ---
-        // เช็คกันเหนียว: ถ้าไอเทมมีอยู่จริง และมีรูป
         if (item != null && item.icon != null)
         {
             icon.sprite = item.icon;
-            icon.color = Color.white; // ปรับสีให้ชัด
-            icon.enabled = true;      // เปิดการแสดงผล
+            icon.color = Color.white;
+            icon.enabled = true;
         }
         else
         {
-            // ถ้าไม่มีรูป (เช่น ลืมใส่ใน Inspector) ให้ทำเป็นใสๆ ไว้ กันเป็นสี่เหลี่ยมขาว
             icon.sprite = null;
             icon.color = Color.clear;
             icon.enabled = true;
         }
 
-        // --- 2. จัดการตัวเลข (Amount Text) ---
         if (amountText != null)
         {
-            // ให้โชว์เลขเสมอ (แม้จะมี 1 ชิ้น) จะได้รู้ว่าโค้ดทำงานถูกไหม
             amountText.text = amount.ToString();
             amountText.enabled = true;
         }
@@ -80,7 +71,6 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     {
         item = null;
 
-        // เคลียร์รูป: ให้เป็นสีใส (Transparent) แต่ยังเปิด enabled ไว้เพื่อให้รับการลากของใส่ได้ (Drop)
         icon.sprite = null;
         icon.color = Color.clear;
         icon.enabled = true;
@@ -93,7 +83,6 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
         canEquip = false;
 
-        // ถ้าของหายไปขณะเมาส์ชี้อยู่ (เช่น กินยาหมด) ให้ปิด Tooltip ด้วย
         if (ItemTooltipImage.instance != null)
         {
             ItemTooltipImage.instance.ClearDescriptionImage();
@@ -106,6 +95,45 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         {
             Inventory.instance.EquipItem(item);
         }
+    }
+
+    // ==========================================
+    // ⭐ ส่วนที่เพิ่มใหม่: จัดการเวลากดใช้ไอเทม
+    // ==========================================
+    // ในไฟล์ InventorySlot.cs
+    public void OnUseItem()
+    {
+        // [Debug 1] เช็คว่าปุ่มถูกกดจริงไหม
+        Debug.Log("👆 กดปุ่มที่ช่องกระเป๋าแล้ว! (OnUseItem ทำงาน)");
+
+        if (item == null)
+        {
+            Debug.Log("❌ แต่ในช่องนี้ไม่มีไอเทม (item เป็น null)");
+            return;
+        }
+
+        // [Debug 2] เช็คว่ามันมองเห็นไอเทมถูกต้องไหม
+        Debug.Log("📦 ไอเทมในช่องคือ: " + item.itemName + " | ประเภท: " + item.itemType);
+
+        if (item.itemType == ItemType.Consumable)
+        {
+            // [Debug 3] เช็คว่ามันเจอกับระบบ DigestionSystem ไหม
+            if (DigestionSystem.instance != null)
+            {
+                Debug.Log("✅ เจอ DigestionSystem! กำลังสั่งให้ลดค่าลง: " + item.digestionReduceAmount);
+
+                // เรียกฟังก์ชันลดค่า
+                DigestionSystem.instance.DecreaseDigestion(item.digestionReduceAmount);
+            }
+            else
+            {
+                Debug.LogError("😱 หา 'DigestionSystem.instance' ไม่เจอ! (คุณลืมวาง DigestionSystem ในฉาก หรือลืมเขียน Awake() หรือเปล่า?)");
+            }
+
+            // ลบไอเทม 1 ชิ้น
+            Inventory.instance.RemoveItem(item);
+        }
+        // ... (ส่วนของ Totem) ...
     }
 
     internal void UpdateUI()

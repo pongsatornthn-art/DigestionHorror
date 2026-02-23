@@ -13,7 +13,13 @@ MonoBehaviour:
   m_Name: "\u0E2A\u0E39\u0E04\u0E23 1"
   m_EditorClassIdentifier: Assembly-CSharp::CraftingRecipe
   ingredients:
-  - item: {fileID: 11400000, guid: 9793f667e437f484ab6906d7288b6367, type: 2}
+  - item: {fileID: 11400000, guid: c6ab575ae864dc44487eddbe9b0e8e6a, type: 2}
     amount: 1
-  result: {fileID: 11400000, guid: b2da38473d999744f9c27736fc1bacf3, type: 2}
+  - item: {fileID: 11400000, guid: 15f75ece7f624eb4ebea32e8fcba9a7b, type: 2}
+    amount: 1
+  - item: {fileID: 11400000, guid: 6eaee243120fcb64f97aa4b447ae609e, type: 2}
+    amount: 1
+  - item: {fileID: 11400000, guid: 1298ef581e70afe4db91d93d9c66c202, type: 2}
+    amount: 1
+  result: {fileID: 11400000, guid: b7f346533ca3ce4418f00dad2f8776c9, type: 2}
   resultAmount: 1

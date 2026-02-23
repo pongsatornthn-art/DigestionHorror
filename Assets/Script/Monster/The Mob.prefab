@@ -32,8 +32,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -6.9, y: 0.08, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 3, y: 3, z: 3}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -84,8 +84,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0, g: 0.0963881, b: 1, a: 1}
+  m_Sprite: {fileID: -110769530380030724, guid: ddda636965afcf244833c7128c4b0d61, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -129,17 +129,17 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.005918205, y: 0.06641661}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1}
+    oldSize: {x: 0.58, y: 0.46}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.3147915, y: 0.299009}
   m_EdgeRadius: 0
 --- !u!114 &6481092370462227741
 MonoBehaviour:
@@ -153,8 +153,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e6f22c37f7fd0d4fbe446f0d93906d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyStats
-  hp: 100
-  damageToPlayer: 10
+  hp: 50
+  damageToPlayer: 1
   lootBoxPrefab: {fileID: 7459246882786202960, guid: b67d781aabce5db4d87f73b13349347a, type: 3}
   boxDestroyTime: 10
 --- !u!114 &3448393394155363883
@@ -169,10 +169,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5052b5a68663b445882ea60d8afdd75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyChaser
+  viewAngle: 90
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 0
   player: {fileID: 0}
   moveSpeed: 3
   detectionRadius: 5
-  damage: 10
+  damage: 3
+  knockbackForce: 10
 --- !u!50 &6554232919313908619
 Rigidbody2D:
   serializedVersion: 5

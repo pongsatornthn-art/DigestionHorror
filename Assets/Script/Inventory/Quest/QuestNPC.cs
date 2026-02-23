@@ -1,42 +1,44 @@
 ﻿using UnityEngine;
 using System.Collections;
-using System.Collections.Generic; // เพิ่มเพื่อให้ใช้ List ได้
+using System.Collections.Generic;
 
 public class QuestNPC : MonoBehaviour
 {
     public enum QuestType { Consumable, NonConsumable }
 
     [System.Serializable]
-    public class QuestData // สร้างโครงสร้างข้อมูลเควส
+    public class QuestData
     {
-        public string questName; // ตั้งชื่อเควสให้จำง่าย
+        public string questName;
         public QuestType questType;
         public ItemData questItem;
         public int requiredAmount = 1;
         public int pageToUnlock = 1;
-        public GameObject startQuestUI; // UI บอกว่าต้องทำอะไร
-        public GameObject successUI;    // UI เมื่อทำสำเร็จ
+        public GameObject startQuestUI;
+        public GameObject successUI;
         [HideInInspector] public bool isCompleted = false;
         [HideInInspector] public bool hasAccepted = false;
     }
 
     [Header("Quest List")]
-    public List<QuestData> quests = new List<QuestData>(); // เก็บรายการเควสทั้งหมด
-    private int currentQuestIndex = 0; // ลำดับเควสปัจจุบัน
+    public List<QuestData> quests = new List<QuestData>();
+    private int currentQuestIndex = 0;
 
     [Header("Settings")]
     public float interactDistance = 3f;
-    public GameObject allQuestsDoneUI; // UI เมื่อทำครบทุกเควสแล้ว (ถ้ามี)
+    public GameObject allQuestsDoneUI;
 
     private Transform player;
     private bool isMouseOver = false;
+
+    // ⭐ เพิ่มตัวแปรนี้เพื่อป้องกันผู้เล่นกด 'E' รัวๆ จน UI ซ้อนกัน
+    private bool isShowingUI = false;
 
     void Start()
     {
         if (PlayerController.instance != null)
             player = PlayerController.instance.transform;
 
-        // ปิด UI ทั้งหมดก่อน
         foreach (var q in quests)
         {
             if (q.startQuestUI != null) q.startQuestUI.SetActive(false);
@@ -50,8 +52,8 @@ public class QuestNPC : MonoBehaviour
 
     void Update()
     {
-        // ถ้าทำครบทุกเควสแล้ว หรือไม่มีผู้เล่น ให้หยุดทำงาน
-        if (currentQuestIndex >= quests.Count || player == null) return;
+        // ถ้ากำลังโชว์ UI อยู่ จะไม่อนุญาตให้กดอะไรเพิ่มจนกว่า UI จะดับไป
+        if (currentQuestIndex >= quests.Count || player == null || isShowingUI) return;
 
         float dist = Vector2.Distance(transform.position, player.position);
 
@@ -73,14 +75,12 @@ public class QuestNPC : MonoBehaviour
             return;
         }
 
-        // เช็คไอเทมใน Inventory ผ่าน Inventory.instance
         if (Inventory.instance.HasItem(currentQuest.questItem, currentQuest.requiredAmount))
         {
             CompleteCurrentQuest(currentQuest);
         }
         else
         {
-            // ถ้ายังมีไอเทมไม่ครบ ให้โชว์ UI เควสเดิมซ้ำ
             StartCoroutine(ShowUI(currentQuest.startQuestUI));
         }
     }
@@ -89,13 +89,11 @@ public class QuestNPC : MonoBehaviour
     {
         quest.isCompleted = true;
 
-        // ถ้าเป็นแบบใช้แล้วหมดไป ให้ลบไอเทม
         if (quest.questType == QuestType.Consumable)
         {
             Inventory.instance.RemoveItem(quest.questItem, quest.requiredAmount);
         }
 
-        // ปลดล็อกหน้าหนังสือผ่าน BookUI.instance
         if (BookUI.instance != null)
             BookUI.instance.UnlockNewPage(quest.pageToUnlock);
 
@@ -103,23 +101,26 @@ public class QuestNPC : MonoBehaviour
 
         Debug.Log("เควสสำเร็จ! ปลดล็อกหน้า: " + quest.pageToUnlock);
 
-        // เลื่อนไปเควสถัดไป
         currentQuestIndex++;
 
-        // ถ้าทำครบทุกเควสแล้ว
         if (currentQuestIndex >= quests.Count && allQuestsDoneUI != null)
         {
             Debug.Log("ทำครบทุกเควสของ NPC ตัวนี้แล้ว");
         }
     }
 
+    // ⭐ ปรับปรุงระบบโชว์ UI ให้ล็อกการกระทำของผู้เล่นชั่วคราว
     IEnumerator ShowUI(GameObject uiObject)
     {
         if (uiObject != null)
         {
+            isShowingUI = true; // ล็อกไม่ให้กด E ซ้ำ
             uiObject.SetActive(true);
-            yield return new WaitForSeconds(2.5f);
+
+            yield return new WaitForSeconds(2.5f); // รอ 2.5 วินาที
+
             uiObject.SetActive(false);
+            isShowingUI = false; // ปลดล็อกให้กดคุยต่อได้
         }
     }
 }

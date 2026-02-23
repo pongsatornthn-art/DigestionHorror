@@ -29,17 +29,30 @@ public class ItemData : ScriptableObject
     public int damage = 10;
     public float staminaCost = 10f;
     public float knockback = 3f;
-    public float lightAttackCooldown = 0.5f; // ⭐ เพิ่มใหม่: คูลดาวน์โจมตีเบา
+    public float lightAttackCooldown = 0.5f;
 
     [Header("Heavy Attack")]
     public int heavyDamage = 20;
     public float heavyStaminaCost = 25f;
     public float heavyKnockback = 6f;
-    public float heavyAttackCooldown = 1.2f; // ⭐ เพิ่มใหม่: คูลดาวน์โจมตีหนัก
+    public float heavyAttackCooldown = 1.2f;
 
     [Header("Durability")]
     public float maxDurability;
 
     [Header("Economy (ระบบเงิน)")]
-    public int price = 50; // ตัวเลขราคาของไอเทมชิ้นนี้
+    public int price = 50;
+
+    // ⭐========================================
+    // ⭐ ส่วนที่เพิ่มใหม่: ระบบยา (Consumable)
+    // ⭐========================================
+    [Header("Consumable Stats (สำหรับ ยา/อาหาร)")]
+    public float digestionReduceAmount = 20f; // กดใช้ปุ๊บ ลดค่า Digestion ทันทีเท่าไหร่
+
+    // ⭐========================================
+    // ⭐ ส่วนที่เพิ่มใหม่: ระบบโทเทม (Totem)
+    // ⭐========================================
+    [Header("Totem Stats (สำหรับ โทเทม)")]
+    public float digestionSlowMultiplier = 0.5f; // ตัวคูณให้ค่าเพิ่มช้าลง (เช่น 0.5 คือเพิ่มช้าลงครึ่งนึง)
+    public float totemEffectDuration = 60f;      // ระยะเวลาแสดงผลของโทเทม (หน่วยเป็นวินาที)
 }

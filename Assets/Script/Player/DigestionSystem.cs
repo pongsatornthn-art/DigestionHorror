@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro; // ⭐ เพิ่มเข้ามาเพื่อใช้ TextMeshPro
 
 public class DigestionSystem : MonoBehaviour
 {
@@ -10,27 +11,81 @@ public class DigestionSystem : MonoBehaviour
     public float currentDigestion = 0f;
 
     [Header("The Watching Hour Settings")]
-    public bool isWatchingHour = false; // สคริปต์อื่นมาสั่งเปิด-ปิดได้
-    public float watchingHourRate = 2f;  // ค่าย่อยเพิ่มขึ้นวินาทีละเท่าไหร่ตอนอยู่นอกบ้าน
+    public bool isWatchingHour = false;
+    public float watchingHourRate = 2f;
 
     [Header("UI")]
     public Slider digestionSlider;
 
+    // ตัวแปรสำหรับคุมความเร็วการย่อยอาหาร
+    private float currentDigestionMultiplier = 1f;
+
+    // ==========================================
+    // ⭐ ส่วนที่เพิ่มใหม่: Totem Timer & UI
+    // ==========================================
+    [Header("Totem Buff UI")]
+    public GameObject totemUIContainer; // กรอบ UI หลักของโทเทม (เอาไว้สั่ง เปิด/ปิด)
+    public TextMeshProUGUI totemTimeText; // ตัวหนังสือบอกเวลาถอยหลัง
+    public Slider totemTimeSlider; // (ตัวเลือกเสริม: หลอดเวลา ลดลงเรื่อยๆ ใส่หรือไม่ใส่ก็ได้)
+
+    private bool isTotemActive = false;
+    private float totemTimer = 0f;
+    private float totemMaxDuration = 0f;
+
     void Awake() => instance = this;
+
+    void Start()
+    {
+        // เริ่มเกมมา ให้ซ่อน UI โทเทมไว้ก่อน
+        if (totemUIContainer != null) totemUIContainer.SetActive(false);
+    }
 
     void Update()
     {
-        // 1. ถ้าเป็นช่วง Watching Hour และอยู่นอกบ้าน ค่า Digestion จะเพิ่มเรื่อยๆ
         if (isWatchingHour)
         {
-            IncreaseDigestion(watchingHourRate * Time.deltaTime);
+            IncreaseDigestion(watchingHourRate * currentDigestionMultiplier * Time.deltaTime);
+        }
+
+        // ⭐ จัดการนับเวลาถอยหลัง Totem และอัปเดต UI ทุกๆ เฟรม
+        if (isTotemActive)
+        {
+            totemTimer -= Time.deltaTime; // เวลาน้อยลงเรื่อยๆ
+
+            // อัปเดตตัวเลข (Mathf.CeilToInt จะปัดเศษขึ้น จะได้ไม่มีทศนิยมยาวๆ)
+            if (totemTimeText != null)
+            {
+                totemTimeText.text = Mathf.CeilToInt(totemTimer).ToString() + "s";
+            }
+
+            // อัปเดตหลอดเวลา (ถ้าคุณอยากทำเป็นหลอดค่อยๆ ลด)
+            if (totemTimeSlider != null)
+            {
+                totemTimeSlider.value = totemTimer / totemMaxDuration;
+            }
+
+            // เช็คว่าเวลาหมดหรือยัง
+            if (totemTimer <= 0)
+            {
+                isTotemActive = false;
+                currentDigestionMultiplier = 1f; // กลับมาเพิ่มความเร็วปกติ
+
+                if (totemUIContainer != null) totemUIContainer.SetActive(false); // ซ่อน UI
+                Debug.Log("หมดฤทธิ์โทเทมแล้ว! UI โทเทมหายไป");
+            }
         }
     }
 
-    // 2. ฟังก์ชันเพิ่มค่า Digestion (เรียกใช้เมื่อโดน Monster ตี หรืออยู่นอกบ้าน)
     public void IncreaseDigestion(float amount)
     {
         currentDigestion += amount;
+        currentDigestion = Mathf.Clamp(currentDigestion, 0, maxDigestion);
+        UpdateUI();
+    }
+
+    public void DecreaseDigestion(float amount)
+    {
+        currentDigestion -= amount;
         currentDigestion = Mathf.Clamp(currentDigestion, 0, maxDigestion);
         UpdateUI();
     }
@@ -45,18 +100,30 @@ public class DigestionSystem : MonoBehaviour
 
     public int GetSpawnBonus()
     {
-        float ratio = currentDigestion / maxDigestion; // แปลงเป็น 0.0 - 1.0
+        float ratio = currentDigestion / maxDigestion;
 
-        if (ratio >= 1.0f) return 7;   // Digestion 100% = +7 ตัว
-        if (ratio >= 0.75f) return 4;  // Digestion 75% = +4 ตัว
-        if (ratio >= 0.5f) return 2;   // Digestion 50% = +2 ตัว
+        if (ratio >= 1.0f) return 7;
+        if (ratio >= 0.75f) return 4;
+        if (ratio >= 0.5f) return 2;
 
-        return 0; // ต่ำกว่า 50% ไม่เกิดเพิ่ม
+        return 0;
     }
-    public void DecreaseDigestion(float amount)
+
+    // ==========================================
+    // ⭐ ฟังก์ชันรับคำสั่งปักโทเทม
+    // ==========================================
+    public void ApplyTotemBuff(float multiplier, float duration)
     {
-        currentDigestion -= amount;
-        currentDigestion = Mathf.Clamp(currentDigestion, 0, maxDigestion);
-        UpdateUI();
+        currentDigestionMultiplier = multiplier;
+        totemMaxDuration = duration;
+        totemTimer = duration;
+        isTotemActive = true;
+
+        // สั่งเปิด UI โทเทมโชว์ขึ้นมาบนหน้าจอ
+        if (totemUIContainer != null) totemUIContainer.SetActive(true);
+
+        // บังคับอัปเดตตัวเลขทันทีในวินาทีแรกที่กดใช้
+        if (totemTimeText != null) totemTimeText.text = duration.ToString() + "s";
+        if (totemTimeSlider != null) totemTimeSlider.value = 1f;
     }
 }
