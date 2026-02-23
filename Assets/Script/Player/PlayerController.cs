@@ -52,6 +52,13 @@ public class PlayerController : MonoBehaviour
     private Vector2 movement;
     private Vector2 mousePos;
 
+    // ⭐ [เพิ่ม] ระบบเสียงเดิน
+    [Header("Footstep Sounds")]
+    public AudioClip[] footstepSounds; // ลากเสียงเท้าหลายๆ แบบมาใส่จะได้ไม่น่าเบื่อ
+    public float walkStepInterval = 0.5f; // ระยะห่างเสียงตอนเดิน
+    public float runStepInterval = 0.3f;  // ระยะห่างเสียงตอนวิ่ง
+    private float stepTimer = 0f;
+
     [Header("Combat Settings")]
     public Transform attackPoint;
     public Vector2 attackBoxSize = new Vector2(1.5f, 1f);
@@ -96,20 +103,17 @@ public class PlayerController : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Confined;
 
-        // ⭐ [เพิ่มจากเพื่อน] พยายามดึงสคริปต์ PlayerStatus (ถ้ามี)
         status = GetComponent<PlayerStatus>();
     }
 
     void Update()
     {
-        // 1. ถ้าเปิดกระเป๋าอยู่ หรือกำลังกระเด็น ห้ามขยับ
         if ((InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
         {
             movement = Vector2.zero;
             return;
         }
 
-        // ⭐ [เพิ่มจากเพื่อน] ถ้าระบบบอกว่าโดนล็อคขา ก็ห้ามขยับ
         if (status != null && status.isRooted)
         {
             movement = Vector2.zero;
@@ -120,11 +124,13 @@ public class PlayerController : MonoBehaviour
         UpdateUI();
         HandleCombatInput();
         UpdateAnimationParams();
+
+        // ⭐ [เพิ่ม] เรียกใช้งานระบบเสียงเท้า
+        HandleFootsteps();
     }
 
     void FixedUpdate()
     {
-        // ⭐ ถักกระเด็นอยู่ ให้ปล่อยให้ Physics ทำงานไป (ห้ามขยับเดินเอง)
         if (isKnockbacked || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
 
         rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
@@ -144,10 +150,49 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // ⭐ [เพิ่ม] ฟังก์ชันสั่งให้ผู้เล่นกระเด็นถอยหลัง
+    // ⭐ [เพิ่ม] ฟังก์ชันจัดการเสียงเดิน
+    void HandleFootsteps()
+    {
+        // ถ้าตัวละครไม่ได้ขยับ หรือกระโดด/กระเด็นอยู่ ให้รีเซ็ตเวลาแล้วหยุดทำงาน
+        if (movement.magnitude <= 0.1f || isKnockbacked)
+        {
+            stepTimer = 0f;
+            return;
+        }
+
+        // นับเวลาถอยหลัง
+        stepTimer -= Time.deltaTime;
+
+        // ถ้าเวลาหมด ให้เล่นเสียงแล้วตั้งเวลาใหม่
+        if (stepTimer <= 0f)
+        {
+            PlayFootstepSound();
+
+            // เลือกระยะห่างเสียงระหว่างเดินกับวิ่ง
+            stepTimer = isRunning ? runStepInterval : walkStepInterval;
+        }
+    }
+
+    // ⭐ [เพิ่ม] ฟังก์ชันเล่นเสียงเดินแบบสุ่ม
+    void PlayFootstepSound()
+    {
+        Debug.Log("👣 ระบบเสียงเดินกำลังทำงาน!"); // ใส่บรรทัดนี้เพื่อเช็ค
+
+        if (audioSource != null && footstepSounds != null && footstepSounds.Length > 0)
+        {
+            int randomIndex = Random.Range(0, footstepSounds.Length);
+            audioSource.pitch = Random.Range(0.9f, 1.1f);
+            audioSource.PlayOneShot(footstepSounds[randomIndex]);
+        }
+        else
+        {
+            Debug.Log("❌ บัค: ลืมใส่ AudioSource หรือลืมลากไฟล์เสียงเดิน!");
+        }
+    }
+
     public void ApplyKnockback(Vector2 force)
     {
-        if (isKnockbacked) return; // ป้องกันโดนรัวๆ
+        if (isKnockbacked) return;
 
         StopAllCoroutines();
         StartCoroutine(KnockbackRoutine(force));
@@ -172,22 +217,15 @@ public class PlayerController : MonoBehaviour
         if (currentHealth <= 0) Die();
     }
 
-    public void PlayerDie()
-    {
-        // ... (โค้ดเก่าของคุณที่ซ้ำซ้อนกับ Die() ผมลบออกให้เพื่อความสะอาดนะครับ ระบบของตกย้ายไปรวมใน Die() หมดแล้ว)
-    }
+    public void PlayerDie() { }
 
     void Die()
     {
         Debug.Log("💀 Player ตายแล้ว! กำลังเริ่มระบบดรอปกล่อง...");
 
-        if (playerDeathBoxPrefab == null) Debug.Log("❌ บัค: ลืมใส่ Prefab กล่องใน Inspector!");
-        if (Inventory.Instance == null) Debug.Log("❌ บัค: หา Inventory.Instance ไม่เจอ!");
-
         if (playerDeathBoxPrefab != null && Inventory.Instance != null)
         {
             List<InventoryItem> droppedItems = Inventory.Instance.DropAllItemsExcept("Knife");
-            Debug.Log("📦 จำนวนของที่จะดรอป (ไม่รวมมีด): " + droppedItems.Count + " ชิ้น");
 
             if (droppedItems.Count > 0)
             {
@@ -197,7 +235,6 @@ public class PlayerController : MonoBehaviour
                 if (deathBox != null)
                 {
                     deathBox.SetBoxContents(droppedItems);
-                    Debug.Log("✅ สร้างกล่องและยัดของสำเร็จ!");
                 }
             }
         }
@@ -231,12 +268,8 @@ public class PlayerController : MonoBehaviour
             transform.position = respawnPoint.position;
         }
         this.enabled = true;
-        isKnockbacked = false; // รีเซ็ตสถานะกระเด็นตอนเกิดใหม่ด้วย
+        isKnockbacked = false;
     }
-
-    // ==========================================
-    // ส่วนล่างนี้คือระบบเดิมของคุณที่เพอร์เฟกต์อยู่แล้ว
-    // ==========================================
 
     public void EquipWeapon(ItemData newItem)
     {
@@ -299,10 +332,8 @@ public class PlayerController : MonoBehaviour
 
     void HandleCombatInput()
     {
-        // ถ้าไม่ได้ถืออะไรเลย ให้ข้ามไป
         if (currentWeapon == null) return;
 
-        // 1. ถ้าถือ "อาวุธ" -> คลิกซ้ายตีเบา / คลิกขวาตีหนัก
         if (currentWeapon.itemType == ItemType.Weapon)
         {
             if (Time.time >= nextAttackTime)
@@ -311,21 +342,13 @@ public class PlayerController : MonoBehaviour
                 else if (Input.GetMouseButtonDown(1)) PerformAttack(false);
             }
         }
-        // 2. ถ้าถือ "ยา (Consumable)" -> คลิกซ้ายเพื่อกิน/ดื่ม
         else if (currentWeapon.itemType == ItemType.Consumable)
         {
-            if (Input.GetMouseButtonDown(0)) // 0 คือคลิกซ้าย
-            {
-                ConsumeItem();
-            }
+            if (Input.GetMouseButtonDown(0)) ConsumeItem();
         }
-        // 3. ถ้าถือ "โทเทม (Totem)" -> คลิกซ้ายเพื่อปักลงพื้นใช้งาน
         else if (currentWeapon.itemType == ItemType.Totem)
         {
-            if (Input.GetMouseButtonDown(0))
-            {
-                UseTotem();
-            }
+            if (Input.GetMouseButtonDown(0)) UseTotem();
         }
     }
 
@@ -345,12 +368,7 @@ public class PlayerController : MonoBehaviour
         if (activeWeapon != null && activeWeapon.IsBroken())
         {
             Debug.Log("โจมตีไม่ได้! อาวุธพังแล้ว ต้องซ่อมก่อนกด C");
-
-            if (audioSource != null && brokenWeaponSound != null)
-            {
-                audioSource.PlayOneShot(brokenWeaponSound);
-            }
-
+            if (audioSource != null && brokenWeaponSound != null) audioSource.PlayOneShot(brokenWeaponSound);
             nextAttackTime = Time.time + 0.3f;
             return;
         }
@@ -366,10 +384,7 @@ public class PlayerController : MonoBehaviour
         float cooldown = isLight ? currentWeapon.lightAttackCooldown : currentWeapon.heavyAttackCooldown;
         nextAttackTime = Time.time + cooldown;
 
-        if (activeWeapon != null)
-        {
-            activeWeapon.UseWeapon(durabilityLossPerHit);
-        }
+        if (activeWeapon != null) activeWeapon.UseWeapon(durabilityLossPerHit);
 
         pendingDamage = isLight ? currentWeapon.damage : currentWeapon.heavyDamage;
 
@@ -381,6 +396,8 @@ public class PlayerController : MonoBehaviour
                 weaponAnim.SetBool("IsLight", isLight);
                 weaponAnim.SetTrigger("Attack");
 
+                // คืนค่า Pitch เป็น 1 เสมอเวลาฟันดาบ เผื่อโดนระบบเสียงเท้าเปลี่ยนไว้
+                if (audioSource) audioSource.pitch = 1f;
                 if (audioSource && swingSound) audioSource.PlayOneShot(swingSound);
 
                 Invoke("DealDamage", 0.2f);
@@ -416,52 +433,24 @@ public class PlayerController : MonoBehaviour
     {
         foreach (Weapon weapon in allWeapons)
         {
-            if (weapon != null && weapon.gameObject.activeInHierarchy)
-            {
-                return weapon;
-            }
+            if (weapon != null && weapon.gameObject.activeInHierarchy) return weapon;
         }
         return null;
     }
-    // ==========================================
-    // ⭐ ระบบกดใช้ไอเทมจากหน้าจอ (ยา & โทเทม)
-    // ==========================================
 
     void ConsumeItem()
     {
         if (currentWeapon == null || currentWeapon.itemType != ItemType.Consumable) return;
 
-        // 1. เรียกใช้ระบบลดย่อยอาหาร
-        if (DigestionSystem.instance != null)
-        {
-            DigestionSystem.instance.DecreaseDigestion(currentWeapon.digestionReduceAmount);
-            Debug.Log($"🍷 ซดยา {currentWeapon.itemName} แล้ว! ลดค่า Digestion ไป: {currentWeapon.digestionReduceAmount}");
-        }
-
-        // 2. สั่งลบไอเทมออกจากกระเป๋า
-        if (Inventory.instance != null)
-        {
-            Inventory.instance.RemoveItem(currentWeapon);
-            // (ถ้าสคริปต์ Inventory ของคุณบังคับให้ใส่จำนวนชิ้นด้วย ให้แก้เป็น: Inventory.instance.RemoveItem(currentWeapon, 1); นะครับ)
-        }
+        if (DigestionSystem.instance != null) DigestionSystem.instance.DecreaseDigestion(currentWeapon.digestionReduceAmount);
+        if (Inventory.instance != null) Inventory.instance.RemoveItem(currentWeapon);
     }
 
     void UseTotem()
     {
         if (currentWeapon == null || currentWeapon.itemType != ItemType.Totem) return;
 
-        // 1. เรียกใช้บัฟหน่วงเวลา
-        if (DigestionSystem.instance != null)
-        {
-            DigestionSystem.instance.ApplyTotemBuff(currentWeapon.digestionSlowMultiplier, currentWeapon.totemEffectDuration);
-            Debug.Log($"🗿 ปักโทเทม {currentWeapon.itemName} แล้ว! ค่าจะเพิ่มช้าลง {currentWeapon.totemEffectDuration} วินาที");
-        }
-
-        // 2. สั่งลบไอเทมออกจากกระเป๋า
-        if (Inventory.instance != null)
-        {
-            Inventory.instance.RemoveItem(currentWeapon);
-        }
+        if (DigestionSystem.instance != null) DigestionSystem.instance.ApplyTotemBuff(currentWeapon.digestionSlowMultiplier, currentWeapon.totemEffectDuration);
+        if (Inventory.instance != null) Inventory.instance.RemoveItem(currentWeapon);
     }
-
 }
