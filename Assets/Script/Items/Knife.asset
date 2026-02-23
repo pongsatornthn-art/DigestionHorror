@@ -30,7 +30,7 @@ MonoBehaviour:
   heavyStaminaCost: 0
   heavyKnockback: 5
   heavyAttackCooldown: 1
-  maxDurability: 100
+  maxDurability: 10000
   price: 50
   digestionReduceAmount: 20
   digestionSlowMultiplier: 0.5
