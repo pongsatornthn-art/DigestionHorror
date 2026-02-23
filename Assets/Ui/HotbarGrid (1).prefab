@@ -867,10 +867,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
   icon: {fileID: 5298505002995908858}
   amountText: {fileID: 7249636484076204755}
-  item: {fileID: 0}
-  removeButton: {fileID: 0}
   slotIndex: 0
-  durabilitySlider: {fileID: 4762806289467513208}
+  item: {fileID: 0}
 --- !u!1 &2594928819329541380
 GameObject:
   m_ObjectHideFlags: 0
@@ -1058,10 +1056,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
   icon: {fileID: 2229763699599743299}
   amountText: {fileID: 9001501479819689253}
-  item: {fileID: 0}
-  removeButton: {fileID: 0}
   slotIndex: 0
-  durabilitySlider: {fileID: 0}
+  item: {fileID: 0}
 --- !u!1 &3135804921777716108
 GameObject:
   m_ObjectHideFlags: 0
@@ -1385,10 +1381,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
   icon: {fileID: 8594180072735081486}
   amountText: {fileID: 5602966418454595307}
-  item: {fileID: 0}
-  removeButton: {fileID: 0}
   slotIndex: 0
-  durabilitySlider: {fileID: 3501973250154997844}
+  item: {fileID: 0}
 --- !u!1 &4602248961076019423
 GameObject:
   m_ObjectHideFlags: 0
