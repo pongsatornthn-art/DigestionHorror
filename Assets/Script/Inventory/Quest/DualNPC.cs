@@ -86,13 +86,28 @@ public class DualNPC : MonoBehaviour
 
     void Update()
     {
-        if (player == null || isShowingUI) return;
+        // 1. เช็คก่อนว่าหา Player เจอไหม (ถ้าไม่เจอให้แจ้งเตือนสีเหลือง)
+        if (player == null)
+        {
+            Debug.LogWarning("⚠️ NPC ตัวนี้หา Player ไม่เจอ! ให้เช็คว่าสคริปต์ Player มีแท็กหรือ Instance ถูกต้องไหม");
 
+            // พยายามหา Player ใหม่เรื่อยๆ เผื่อ Player โหลดช้า
+            if (PlayerController.instance != null)
+                player = PlayerController.instance.transform;
+
+            return;
+        }
+
+        // 2. ถ้ากำลังเปิดหน้าต่าง UI อยู่ ให้ข้ามการกดปุ่มไปเลย
+        if (isShowingUI) return;
+
+        // 3. คำนวณระยะห่าง
         float dist = Vector2.Distance(transform.position, player.position);
 
-        if (dist <= interactDistance && isMouseOver && Input.GetKeyDown(KeyCode.E))
+        // ⭐ ลบ isMouseOver ออกแล้ว! แค่เดินเข้าไปใกล้ๆ แล้วกด E ก็ติดเลย
+        if (dist <= interactDistance && Input.GetKeyDown(KeyCode.E))
         {
-            // เมื่อกด E ให้เปิดหน้าเลือกก่อน
+            Debug.Log("✅ กด E สำเร็จ! กำลังเปิดหน้าต่างเลือก...");
             OpenSelectionPanel();
         }
     }
