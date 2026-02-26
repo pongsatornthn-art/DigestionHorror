@@ -84,6 +84,8 @@ public class PlayerController : MonoBehaviour
     public int currentMoney = 500;
     public TextMeshProUGUI moneyText;
 
+    public bool isCrafting = false; // ⭐ [เพิ่ม] สถานะกำลังคราฟ
+
     void Awake() => instance = this;
 
     void Start()
@@ -108,7 +110,8 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if ((InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
+        // ⭐ [เพิ่ม] เช็คว่าถ้า isCrafting เป็น true จะห้ามเดิน
+        if (isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
         {
             movement = Vector2.zero;
             return;
@@ -124,14 +127,13 @@ public class PlayerController : MonoBehaviour
         UpdateUI();
         HandleCombatInput();
         UpdateAnimationParams();
-
-        // ⭐ [เพิ่ม] เรียกใช้งานระบบเสียงเท้า
         HandleFootsteps();
     }
 
     void FixedUpdate()
     {
-        if (isKnockbacked || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
+        // ⭐ [เพิ่ม] ใส่ isCrafting เข้าไปในเงื่อนไขการหยุดฟิสิกส์
+        if (isKnockbacked || isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
 
         rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
 
@@ -452,5 +454,22 @@ public class PlayerController : MonoBehaviour
 
         if (DigestionSystem.instance != null) DigestionSystem.instance.ApplyTotemBuff(currentWeapon.digestionSlowMultiplier, currentWeapon.totemEffectDuration);
         if (Inventory.instance != null) Inventory.instance.RemoveItem(currentWeapon);
+    }
+    // ==========================================
+    // ⭐ [เพิ่ม] ฟังก์ชันสำหรับเปิด-ปิด อนิเมชั่นคราฟ
+    // ==========================================
+    public void SetCraftingState(bool state)
+    {
+        isCrafting = state;
+
+        // สั่ง Animator ให้เล่นท่า IsCrafting
+        if (bodyAnim != null) bodyAnim.SetBool("IsCrafting", state);
+        if (legAnim != null) legAnim.SetBool("IsCrafting", state);
+
+        // ถ้าถืออาวุธอยู่ ให้ซ่อนอาวุธชั่วคราวตอนกำลังก้ม (จะได้ไม่ดูกราฟิกทะลุกัน)
+        if (currentActiveHolder != null)
+        {
+            currentActiveHolder.SetActive(!state);
+        }
     }
 }

@@ -9,7 +9,7 @@ public class CraftingManager : MonoBehaviour
     [Header("UI References")]
     public CraftingSlot[] inputSlots;
     public Image resultPreviewImage;
-    public Button craftButton; 
+    public Button craftButton;
 
     [Header("Data")]
     public List<CraftingRecipe> recipes;
@@ -30,7 +30,6 @@ public class CraftingManager : MonoBehaviour
     {
         currentRecipe = null;
 
-        // รีเซ็ต UI ก่อนเริ่มเช็ค
         if (resultPreviewImage != null)
         {
             resultPreviewImage.sprite = null;
@@ -38,8 +37,6 @@ public class CraftingManager : MonoBehaviour
         }
         if (craftButton != null) craftButton.interactable = false;
 
-        // 1. รวบรวมไอเทมทั้งหมดบนโต๊ะ "แตกเป็นชิ้นๆ" ใส่ List
-        // (เช่น ไม้ x2 จะถูกแตกเป็น [ไม้, ไม้] เพื่อให้เช็คง่าย)
         List<ItemData> itemsOnTable = new List<ItemData>();
         foreach (var slot in inputSlots)
         {
@@ -62,43 +59,25 @@ public class CraftingManager : MonoBehaviour
                 for (int i = 0; i < ing.amount; i++) requiredItems.Add(ing.item);
             }
 
-            // ⭐ กฎเหล็กข้อที่ 1: "จำนวนต้องเท่ากันเป๊ะ"
-            // ถ้าบนโต๊ะมี 3 ชิ้น แต่สูตรใช้ 2 ชิ้น -> ปัดตกทันที (แก้บั๊ก A+B ได้ Z)
-            if (itemsOnTable.Count != requiredItems.Count)
-            {
-                continue;
-            }
+            if (itemsOnTable.Count != requiredItems.Count) continue;
 
-            // ⭐ กฎเหล็กข้อที่ 2: "ไส้ในต้องเหมือนกัน"
             if (CheckIngredientsExact(itemsOnTable, requiredItems))
             {
-                // เจอสูตรที่ถูกต้อง!
                 currentRecipe = recipe;
                 UpdateResultUI();
-                return; // หยุดหาทันที
+                return;
             }
         }
     }
 
-    // ฟังก์ชันช่วยเช็คว่าของตรงกันไหม (ไม่สนลำดับการวาง)
     bool CheckIngredientsExact(List<ItemData> tableList, List<ItemData> recipeList)
     {
-        // สร้างรายการจำลองมาเพื่อขีดฆ่าออก
         List<ItemData> tempCheckList = new List<ItemData>(tableList);
-
         foreach (ItemData req in recipeList)
         {
-            if (tempCheckList.Contains(req))
-            {
-                tempCheckList.Remove(req); // เจอแล้วลบออก 1 ชิ้น
-            }
-            else
-            {
-                return false; // หาไม่เจอแสดงว่าสูตรผิด
-            }
+            if (tempCheckList.Contains(req)) tempCheckList.Remove(req);
+            else return false;
         }
-
-        // เช็คครั้งสุดท้าย: ต้องไม่มีของเหลือในรายการจำลอง
         return tempCheckList.Count == 0;
     }
 
@@ -115,32 +94,51 @@ public class CraftingManager : MonoBehaviour
         }
     }
 
-    // ---------------------------------------------------------
-    // 🛠️ ส่วน Action (คราฟต์, ยกเลิก, คืนของ)
-    // ---------------------------------------------------------
-
+    // ==========================================
+    // ⭐ ส่วนที่แก้ไข: เพิ่มระบบหน่วงเวลาคราฟและเล่นอนิเมชั่น
+    // ==========================================
     public void ConfirmCraft()
     {
         if (currentRecipe != null)
         {
-            // 1. ให้ของรางวัลเข้ากระเป๋า
-            Inventory.instance.AddItem(currentRecipe.result, currentRecipe.resultAmount);
-
-            // ✅ เก็บชื่อของไว้ก่อน (เพื่อ Log)
-            string craftedItemName = currentRecipe.result.itemName;
-
-            // 2. ล้างของบนโต๊ะทิ้ง
-            foreach (var slot in inputSlots)
-            {
-                if (slot != null) slot.ClearSlot();
-            }
-
-            // 3. รีเซ็ตระบบ (คำสั่งนี้จะทำให้ currentRecipe กลายเป็น null)
-            CheckRecipe();
-
-            // ✅ ใช้ชื่อที่เก็บไว้มาแสดงผลแทน (ไม่ Error แล้ว)
-            Debug.Log($"คราฟต์ {craftedItemName} สำเร็จ!");
+            // เปลี่ยนไปใช้ Coroutine เพื่อให้รอเวลาได้
+            StartCoroutine(CraftingRoutine());
         }
+    }
+
+    private System.Collections.IEnumerator CraftingRoutine()
+    {
+        // 1. ปิดปุ่มคราฟชั่วคราว ป้องกันผู้เล่นกดเบิ้ลรัวๆ
+        if (craftButton != null) craftButton.interactable = false;
+
+        // 2. สั่งให้ Player เล่นอนิเมชั่นก้มคราฟของ
+        if (PlayerController.instance != null)
+        {
+            PlayerController.instance.SetCraftingState(true);
+        }
+
+        // 3. หน่วงเวลาคราฟ (ปรับตัวเลข 1.5f ได้ตามต้องการว่าอยากให้ก้มนานแค่ไหน)
+        yield return new WaitForSeconds(1.5f);
+
+        // 4. ให้ของรางวัลเข้ากระเป๋า
+        Inventory.instance.AddItem(currentRecipe.result, currentRecipe.resultAmount);
+        string craftedItemName = currentRecipe.result.itemName;
+
+        // 5. ล้างของบนโต๊ะทิ้ง
+        foreach (var slot in inputSlots)
+        {
+            if (slot != null) slot.ClearSlot();
+        }
+
+        // 6. สั่งให้ Player เลิกเล่นอนิเมชั่นก้ม และกลับมายืนปกติ
+        if (PlayerController.instance != null)
+        {
+            PlayerController.instance.SetCraftingState(false);
+        }
+
+        // 7. รีเซ็ต UI โต๊ะคราฟ
+        CheckRecipe();
+        Debug.Log($"คราฟต์ {craftedItemName} สำเร็จ!");
     }
 
     public void CancelCrafting()
@@ -149,7 +147,6 @@ public class CraftingManager : MonoBehaviour
         {
             if (slot != null && slot.itemInSlot != null && slot.amount > 0)
             {
-                // คืนของเข้ากระเป๋า
                 Inventory.instance.AddItem(slot.itemInSlot, slot.amount);
                 slot.ClearSlot();
             }
@@ -158,7 +155,6 @@ public class CraftingManager : MonoBehaviour
         Debug.Log("ยกเลิกและคืนของเรียบร้อย");
     }
 
-    // Helper Functions
     public int GetTotalItemInInventory(ItemData item)
     {
         if (Inventory.instance != null) return Inventory.instance.GetItemCount(item);
@@ -174,4 +170,5 @@ public class CraftingManager : MonoBehaviour
         }
         return total;
     }
+
 }
