@@ -54,10 +54,23 @@ public class PlayerController : MonoBehaviour
 
     // ⭐ [เพิ่ม] ระบบเสียงเดิน
     [Header("Footstep Sounds")]
-    public AudioClip[] footstepSounds; // ลากเสียงเท้าหลายๆ แบบมาใส่จะได้ไม่น่าเบื่อ
-    public float walkStepInterval = 0.5f; // ระยะห่างเสียงตอนเดิน
-    public float runStepInterval = 0.3f;  // ระยะห่างเสียงตอนวิ่ง
+    public AudioClip[] footstepSounds;
+    public float walkStepInterval = 0.5f;
+    public float runStepInterval = 0.3f;
     private float stepTimer = 0f;
+
+    // ==========================================
+    // ⭐ [เพิ่มใหม่] ระบบผลักและดึง (Push & Pull)
+    // ==========================================
+    [Header("Push & Pull System")]
+    public Transform grabPoint;      // จุดที่ยื่นมือไปจับ (สร้าง Empty GameObject หน้าตัวละคร)
+    public float grabRange = 0.5f;   // ระยะการจับ
+    public LayerMask draggableLayer; // เลเยอร์ของสิ่งของที่จับได้
+
+    private DraggableObject currentGrabbedObj;
+    private FixedJoint2D grabJoint;
+    private float originalWalkSpeed;
+    private float originalRunSpeed;
 
     [Header("Combat Settings")]
     public Transform attackPoint;
@@ -77,14 +90,14 @@ public class PlayerController : MonoBehaviour
     public Transform respawnPoint;
 
     [Header("Knockback Settings")]
-    public float knockbackDuration = 0.2f; // ระยะเวลาที่ควบคุมตัวไม่ได้เมื่อโดนตี
+    public float knockbackDuration = 0.2f;
     private bool isKnockbacked = false;
 
     [Header("Economy")]
     public int currentMoney = 500;
     public TextMeshProUGUI moneyText;
 
-    public bool isCrafting = false; // ⭐ [เพิ่ม] สถานะกำลังคราฟ
+    public bool isCrafting = false;
 
     void Awake() => instance = this;
 
@@ -96,6 +109,10 @@ public class PlayerController : MonoBehaviour
 
         currentHealth = maxHealth;
         currentStamina = maxStamina;
+
+        // ⭐ เก็บค่าความเร็วเดิมไว้ เพื่อให้ลากของเสร็จแล้วกลับมาวิ่งเร็วเท่าเดิม
+        originalWalkSpeed = walkSpeed;
+        originalRunSpeed = runSpeed;
 
         UpdateUI();
         Time.timeScale = 1f;
@@ -110,10 +127,11 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // ⭐ [เพิ่ม] เช็คว่าถ้า isCrafting เป็น true จะห้ามเดิน
+        // ถ้าคราฟของ เปิดกระเป๋า หรือโดนตี ห้ามเดินและห้ามจับของ
         if (isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
         {
             movement = Vector2.zero;
+            if (currentGrabbedObj != null) ReleaseObject(); // หลุดจากการจับถ้าโดนตี
             return;
         }
 
@@ -126,13 +144,16 @@ public class PlayerController : MonoBehaviour
         HandleInput();
         UpdateUI();
         HandleCombatInput();
+
+        // ⭐ เรียกใช้ระบบจับของ
+        HandleGrabInput();
+
         UpdateAnimationParams();
         HandleFootsteps();
     }
 
     void FixedUpdate()
     {
-        // ⭐ [เพิ่ม] ใส่ isCrafting เข้าไปในเงื่อนไขการหยุดฟิสิกส์
         if (isKnockbacked || isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
 
         rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
@@ -143,6 +164,8 @@ public class PlayerController : MonoBehaviour
         if (currentActiveHolder != null)
             currentActiveHolder.transform.rotation = Quaternion.Euler(0, 0, angle);
 
+        // หมุนตัวละครตามเมาส์ (แต่ถ้าจับของอยู่ อาจจะไม่ให้หมุนก็ได้นะ ถ้าอยากให้เดินถอยหลังลาก)
+        // สำหรับตอนนี้ให้หมุนตามปกติไปก่อนครับ
         if (bodyTransform != null) bodyTransform.rotation = Quaternion.Euler(0, 0, angle);
 
         if (movement.magnitude > 0.1f && legsTransform != null)
@@ -152,43 +175,87 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // ⭐ [เพิ่ม] ฟังก์ชันจัดการเสียงเดิน
+    // ==========================================
+    // ⭐ ระบบผลักและดึง (Push & Pull)
+    // ==========================================
+    void HandleGrabInput()
+    {
+        // กด E ค้างไว้เพื่อจับ
+        if (Input.GetKeyDown(KeyCode.E) && currentGrabbedObj == null)
+        {
+            Collider2D col = Physics2D.OverlapCircle(grabPoint.position, grabRange, draggableLayer);
+            if (col != null)
+            {
+                DraggableObject draggable = col.GetComponent<DraggableObject>();
+                if (draggable != null) GrabObject(draggable);
+            }
+        }
+        // ปล่อย E เพื่อปล่อยมือ
+        else if (Input.GetKeyUp(KeyCode.E) && currentGrabbedObj != null)
+        {
+            ReleaseObject();
+        }
+    }
+
+    void GrabObject(DraggableObject obj)
+    {
+        currentGrabbedObj = obj;
+
+        // สร้างเชือกฟิสิกส์เพื่อล็อกตัวผู้เล่นติดกับกล่อง
+        grabJoint = gameObject.AddComponent<FixedJoint2D>();
+        grabJoint.connectedBody = obj.GetComponent<Rigidbody2D>();
+
+        // ลดความเร็วตัวละครลงตามน้ำหนักของ
+        walkSpeed = originalWalkSpeed / obj.weight;
+        runSpeed = originalRunSpeed / obj.weight;
+
+        // สั่งให้กล่องเปิดเอฟเฟกต์ (ฝุ่นกระจาย + เสียง)
+        obj.StartDragging();
+    }
+
+    void ReleaseObject()
+    {
+        if (grabJoint != null) Destroy(grabJoint); // ทำลายการเชื่อมต่อทิ้ง
+
+        if (currentGrabbedObj != null)
+        {
+            currentGrabbedObj.StopDragging();
+            currentGrabbedObj = null;
+        }
+
+        // คืนความเร็วให้ผู้เล่น
+        walkSpeed = originalWalkSpeed;
+        runSpeed = originalRunSpeed;
+    }
+
+    // ==========================================
+    // ฟังก์ชันอื่นๆ คงเดิมทั้งหมด
+    // ==========================================
+
     void HandleFootsteps()
     {
-        // ถ้าตัวละครไม่ได้ขยับ หรือกระโดด/กระเด็นอยู่ ให้รีเซ็ตเวลาแล้วหยุดทำงาน
         if (movement.magnitude <= 0.1f || isKnockbacked)
         {
             stepTimer = 0f;
             return;
         }
 
-        // นับเวลาถอยหลัง
         stepTimer -= Time.deltaTime;
 
-        // ถ้าเวลาหมด ให้เล่นเสียงแล้วตั้งเวลาใหม่
         if (stepTimer <= 0f)
         {
             PlayFootstepSound();
-
-            // เลือกระยะห่างเสียงระหว่างเดินกับวิ่ง
             stepTimer = isRunning ? runStepInterval : walkStepInterval;
         }
     }
 
-    // ⭐ [เพิ่ม] ฟังก์ชันเล่นเสียงเดินแบบสุ่ม
     void PlayFootstepSound()
     {
-        Debug.Log("👣 ระบบเสียงเดินกำลังทำงาน!"); // ใส่บรรทัดนี้เพื่อเช็ค
-
         if (audioSource != null && footstepSounds != null && footstepSounds.Length > 0)
         {
             int randomIndex = Random.Range(0, footstepSounds.Length);
             audioSource.pitch = Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(footstepSounds[randomIndex]);
-        }
-        else
-        {
-            Debug.Log("❌ บัค: ลืมใส่ AudioSource หรือลืมลากไฟล์เสียงเดิน!");
         }
     }
 
@@ -224,6 +291,9 @@ public class PlayerController : MonoBehaviour
     void Die()
     {
         Debug.Log("💀 Player ตายแล้ว! กำลังเริ่มระบบดรอปกล่อง...");
+
+        // ถ้าตายตอนจับของอยู่ ให้ปล่อยมือก่อน
+        if (currentGrabbedObj != null) ReleaseObject();
 
         if (playerDeathBoxPrefab != null && Inventory.Instance != null)
         {
@@ -398,7 +468,6 @@ public class PlayerController : MonoBehaviour
                 weaponAnim.SetBool("IsLight", isLight);
                 weaponAnim.SetTrigger("Attack");
 
-                // คืนค่า Pitch เป็น 1 เสมอเวลาฟันดาบ เผื่อโดนระบบเสียงเท้าเปลี่ยนไว้
                 if (audioSource) audioSource.pitch = 1f;
                 if (audioSource && swingSound) audioSource.PlayOneShot(swingSound);
 
@@ -455,18 +524,14 @@ public class PlayerController : MonoBehaviour
         if (DigestionSystem.instance != null) DigestionSystem.instance.ApplyTotemBuff(currentWeapon.digestionSlowMultiplier, currentWeapon.totemEffectDuration);
         if (Inventory.instance != null) Inventory.instance.RemoveItem(currentWeapon);
     }
-    // ==========================================
-    // ⭐ [เพิ่ม] ฟังก์ชันสำหรับเปิด-ปิด อนิเมชั่นคราฟ
-    // ==========================================
+
     public void SetCraftingState(bool state)
     {
         isCrafting = state;
 
-        // สั่ง Animator ให้เล่นท่า IsCrafting
         if (bodyAnim != null) bodyAnim.SetBool("IsCrafting", state);
         if (legAnim != null) legAnim.SetBool("IsCrafting", state);
 
-        // ถ้าถืออาวุธอยู่ ให้ซ่อนอาวุธชั่วคราวตอนกำลังก้ม (จะได้ไม่ดูกราฟิกทะลุกัน)
         if (currentActiveHolder != null)
         {
             currentActiveHolder.SetActive(!state);
