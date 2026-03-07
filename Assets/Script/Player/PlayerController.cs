@@ -493,7 +493,8 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void UpdateUI()
+    // ⭐ แก้ไขตรงนี้: เปลี่ยนเป็น public เพื่อให้ GameManager เรียกใช้งานตอนโหลดเกมได้
+    public void UpdateUI()
     {
         if (hpSlider != null) hpSlider.value = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0;
         if (staminaSlider != null) staminaSlider.value = (maxStamina > 0) ? currentStamina / maxStamina : 0;
