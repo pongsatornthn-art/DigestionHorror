@@ -110,7 +110,6 @@ public class PlayerController : MonoBehaviour
         currentHealth = maxHealth;
         currentStamina = maxStamina;
 
-        // ⭐ เก็บค่าความเร็วเดิมไว้ เพื่อให้ลากของเสร็จแล้วกลับมาวิ่งเร็วเท่าเดิม
         originalWalkSpeed = walkSpeed;
         originalRunSpeed = runSpeed;
 
@@ -127,11 +126,10 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // ถ้าคราฟของ เปิดกระเป๋า หรือโดนตี ห้ามเดินและห้ามจับของ
         if (isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
         {
             movement = Vector2.zero;
-            if (currentGrabbedObj != null) ReleaseObject(); // หลุดจากการจับถ้าโดนตี
+            if (currentGrabbedObj != null) ReleaseObject();
             return;
         }
 
@@ -144,10 +142,7 @@ public class PlayerController : MonoBehaviour
         HandleInput();
         UpdateUI();
         HandleCombatInput();
-
-        // ⭐ เรียกใช้ระบบจับของ
         HandleGrabInput();
-
         UpdateAnimationParams();
         HandleFootsteps();
     }
@@ -158,21 +153,18 @@ public class PlayerController : MonoBehaviour
 
         rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
 
+        // คำนวณองศาจากเมาส์
         Vector2 lookDir = mousePos - rb.position;
         float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
 
         if (currentActiveHolder != null)
             currentActiveHolder.transform.rotation = Quaternion.Euler(0, 0, angle);
 
-        // หมุนตัวละครตามเมาส์ (แต่ถ้าจับของอยู่ อาจจะไม่ให้หมุนก็ได้นะ ถ้าอยากให้เดินถอยหลังลาก)
-        // สำหรับตอนนี้ให้หมุนตามปกติไปก่อนครับ
+        // หมุนท่อนบนตามเมาส์
         if (bodyTransform != null) bodyTransform.rotation = Quaternion.Euler(0, 0, angle);
 
-        if (movement.magnitude > 0.1f && legsTransform != null)
-        {
-            float angleLegs = Mathf.Atan2(movement.y, movement.x) * Mathf.Rad2Deg - 90f;
-            legsTransform.rotation = Quaternion.Lerp(legsTransform.rotation, Quaternion.Euler(0, 0, angleLegs), 0.2f);
-        }
+        // ⭐ หมุนขา (ท่อนล่าง) ตามเมาส์ด้วย องศาเดียวกันเป๊ะ!
+        if (legsTransform != null) legsTransform.rotation = Quaternion.Euler(0, 0, angle);
     }
 
     // ==========================================
@@ -180,7 +172,6 @@ public class PlayerController : MonoBehaviour
     // ==========================================
     void HandleGrabInput()
     {
-        // กด E ค้างไว้เพื่อจับ
         if (Input.GetKeyDown(KeyCode.E) && currentGrabbedObj == null)
         {
             Collider2D col = Physics2D.OverlapCircle(grabPoint.position, grabRange, draggableLayer);
@@ -190,7 +181,6 @@ public class PlayerController : MonoBehaviour
                 if (draggable != null) GrabObject(draggable);
             }
         }
-        // ปล่อย E เพื่อปล่อยมือ
         else if (Input.GetKeyUp(KeyCode.E) && currentGrabbedObj != null)
         {
             ReleaseObject();
@@ -200,30 +190,21 @@ public class PlayerController : MonoBehaviour
     void GrabObject(DraggableObject obj)
     {
         currentGrabbedObj = obj;
-
-        // สร้างเชือกฟิสิกส์เพื่อล็อกตัวผู้เล่นติดกับกล่อง
         grabJoint = gameObject.AddComponent<FixedJoint2D>();
         grabJoint.connectedBody = obj.GetComponent<Rigidbody2D>();
-
-        // ลดความเร็วตัวละครลงตามน้ำหนักของ
         walkSpeed = originalWalkSpeed / obj.weight;
         runSpeed = originalRunSpeed / obj.weight;
-
-        // สั่งให้กล่องเปิดเอฟเฟกต์ (ฝุ่นกระจาย + เสียง)
         obj.StartDragging();
     }
 
     void ReleaseObject()
     {
-        if (grabJoint != null) Destroy(grabJoint); // ทำลายการเชื่อมต่อทิ้ง
-
+        if (grabJoint != null) Destroy(grabJoint);
         if (currentGrabbedObj != null)
         {
             currentGrabbedObj.StopDragging();
             currentGrabbedObj = null;
         }
-
-        // คืนความเร็วให้ผู้เล่น
         walkSpeed = originalWalkSpeed;
         runSpeed = originalRunSpeed;
     }
@@ -292,7 +273,6 @@ public class PlayerController : MonoBehaviour
     {
         Debug.Log("💀 Player ตายแล้ว! กำลังเริ่มระบบดรอปกล่อง...");
 
-        // ถ้าตายตอนจับของอยู่ ให้ปล่อยมือก่อน
         if (currentGrabbedObj != null) ReleaseObject();
 
         if (playerDeathBoxPrefab != null && Inventory.Instance != null)
@@ -493,7 +473,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // ⭐ แก้ไขตรงนี้: เปลี่ยนเป็น public เพื่อให้ GameManager เรียกใช้งานตอนโหลดเกมได้
     public void UpdateUI()
     {
         if (hpSlider != null) hpSlider.value = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0;
