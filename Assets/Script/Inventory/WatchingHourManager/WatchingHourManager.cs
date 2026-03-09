@@ -19,9 +19,12 @@ public class WatchingHourManager : MonoBehaviour
     EventState currentState = EventState.Normal;
 
     [Header("ระบบภาพและเสียง")]
-    public Image edgeEffectUI; // ⭐ ลาก UI ขอบจอแดงมาใส่ตรงนี้
-    public Color effectColor = Color.red; // สีของขอบจอ
-    [Range(0f, 1f)] public float maxAlpha = 0.8f; // ความเข้มสูงสุดของสีแดง (1 คือทึบสุด 0 คือใส)
+    public Image edgeEffectUI; // ⭐ ลาก UI ภาพขอบจอ (เช่น Vignette) มาใส่ตรงนี้
+
+    // ⭐ [เปลี่ยนจุดนี้] เปลี่ยนสีเริ่มต้นจาก Color.red เป็น Color.black
+    public Color effectColor = Color.black; // สีของเอฟเฟกต์จอ (เปลี่ยนเป็นสีดำเพื่อให้จอมืดลง)
+
+    [Range(0f, 1f)] public float maxAlpha = 0.8f; // ความเข้มสูงสุดของสีดำตอนเกิดเหตุ (1 คือมืดสนิท 0 คือใส)
     public AudioSource sirenAudio;
 
     [Header("บทลงโทษ (ต่อวินาที)")]
@@ -55,7 +58,7 @@ public class WatchingHourManager : MonoBehaviour
             case EventState.Warning:
                 timer -= Time.deltaTime;
 
-                // ⭐ ค่อยๆ เฟดขอบจอแดงให้เข้มขึ้นเรื่อยๆ
+                // ⭐ ค่อยๆ เฟดขอบจอให้มืดขึ้นเรื่อยๆ (เปลี่ยนคำอธิบาย)
                 if (edgeEffectUI != null)
                 {
                     Color c = effectColor;
@@ -103,14 +106,14 @@ public class WatchingHourManager : MonoBehaviour
         if (edgeEffectUI != null)
         {
             Color c = effectColor;
-            c.a = maxAlpha;
+            c.a = maxAlpha; // ฉากมืดลงตามค่า maxAlpha ที่ตั้งไว้
             edgeEffectUI.color = c;
         }
 
         if (sirenAudio != null) sirenAudio.Play();
         if (DigestionSystem.instance != null) DigestionSystem.instance.isWatchingHour = true;
 
-        Debug.Log("🩸 The Watching Hour เริ่มต้นขึ้นแล้ว!");
+        Debug.Log("💀 The Watching Hour เริ่มต้นขึ้นแล้ว! จอมืดลง!");
     }
 
     void EndEvent()
@@ -118,7 +121,7 @@ public class WatchingHourManager : MonoBehaviour
         currentState = EventState.Normal;
         timer = Random.Range(minTimeBetweenEvents, maxTimeBetweenEvents);
 
-        // ซ่อนขอบจอ
+        // ซ่อนขอบจอ (กลับมาสว่างปกติ)
         if (edgeEffectUI != null) edgeEffectUI.gameObject.SetActive(false);
 
         if (sirenAudio != null) sirenAudio.Stop();
