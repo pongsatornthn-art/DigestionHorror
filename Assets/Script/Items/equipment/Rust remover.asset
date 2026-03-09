@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f363b3cc3d5c1b3458c8457fe9ddbae4, type: 3}
-  m_Name: "\u0E14\u0E49\u0E32\u0E21\u0E02\u0E27\u0E32\u0E19"
+  m_Name: Rust remover
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: ax handle
-  icon: {fileID: -58218078911942680, guid: 504e966e3d1870b4390b3506e1036e09, type: 3}
+  itemName: Rust remover
+  icon: {fileID: -3075368193214949120, guid: a4b615c9397b38743877b206c517e50c, type: 3}
   description: 
   descriptionImage: {fileID: 0}
   isStackable: 1

@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f363b3cc3d5c1b3458c8457fe9ddbae4, type: 3}
-  m_Name: "\u0E40\u0E2A\u0E49\u0E19\u0E1C\u0E21\u0E21\u0E2D\u0E19\u0E40\u0E15\u0E2D\u0E23\u0E4C"
+  m_Name: ax handle
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: "\u0E40\u0E2A\u0E49\u0E19\u0E1C\u0E21\u0E21\u0E2D\u0E19\u0E40\u0E15\u0E2D\u0E23\u0E4C"
-  icon: {fileID: -3674168313692527970, guid: eb0f3cc7c0f80a54d9567a851100521e, type: 3}
+  itemName: ax handle
+  icon: {fileID: -58218078911942680, guid: 504e966e3d1870b4390b3506e1036e09, type: 3}
   description: 
   descriptionImage: {fileID: 0}
   isStackable: 1
-  maxStack: 64
+  maxStack: 5
   itemType: 0
   equippedSprite: {fileID: 0}
   weaponAnimatorOverride: {fileID: 0}

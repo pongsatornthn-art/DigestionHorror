@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f363b3cc3d5c1b3458c8457fe9ddbae4, type: 3}
-  m_Name: "\u0E2B\u0E34\u0E19\u0E25\u0E31\u0E1A"
+  m_Name: wine
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: whetstone
-  icon: {fileID: -6276408390063833456, guid: 5e92ac573584a4d4d8762c86f520ae72, type: 3}
+  itemName: wine
+  icon: {fileID: -8638005434913105384, guid: f77f670b246ac5d41aef50a5cb2ea540, type: 3}
   description: 
   descriptionImage: {fileID: 0}
   isStackable: 1
-  maxStack: 5
+  maxStack: 1
   itemType: 0
   equippedSprite: {fileID: 0}
   weaponAnimatorOverride: {fileID: 0}

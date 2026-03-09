@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
+using UnityEngine.Scripting; // ⭐ เพิ่ม namespace นี้
 
 public enum ItemType { General, Weapon, Totem, Consumable }
 
+[Preserve] // ⭐ สั่งให้ Unity "ห้ามลบ" คลาสนี้ทิ้งตอน Build เด็ดขาด!
 [CreateAssetMenu(fileName = "New Item", menuName = "Inventory/Item")]
 public class ItemData : ScriptableObject
 {
@@ -43,16 +45,10 @@ public class ItemData : ScriptableObject
     [Header("Economy (ระบบเงิน)")]
     public int price = 50;
 
-    // ⭐========================================
-    // ⭐ ส่วนที่เพิ่มใหม่: ระบบยา (Consumable)
-    // ⭐========================================
     [Header("Consumable Stats (สำหรับ ยา/อาหาร)")]
-    public float digestionReduceAmount = 20f; // กดใช้ปุ๊บ ลดค่า Digestion ทันทีเท่าไหร่
+    public float digestionReduceAmount = 20f;
 
-    // ⭐========================================
-    // ⭐ ส่วนที่เพิ่มใหม่: ระบบโทเทม (Totem)
-    // ⭐========================================
     [Header("Totem Stats (สำหรับ โทเทม)")]
-    public float digestionSlowMultiplier = 0.5f; // ตัวคูณให้ค่าเพิ่มช้าลง (เช่น 0.5 คือเพิ่มช้าลงครึ่งนึง)
-    public float totemEffectDuration = 60f;      // ระยะเวลาแสดงผลของโทเทม (หน่วยเป็นวินาที)
+    public float digestionSlowMultiplier = 0.5f;
+    public float totemEffectDuration = 60f;
 }

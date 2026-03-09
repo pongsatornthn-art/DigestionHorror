@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f363b3cc3d5c1b3458c8457fe9ddbae4, type: 3}
-  m_Name: "\u0E22\u0E32\u0E40\u0E0A\u0E47\u0E14\u0E2A\u0E19\u0E34\u0E21"
+  m_Name: ax blade
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Rust remover
-  icon: {fileID: -3075368193214949120, guid: a4b615c9397b38743877b206c517e50c, type: 3}
+  itemName: ax blade
+  icon: {fileID: -3432792937102018733, guid: 305c3d914f6bb63438a3871f3c7f608a, type: 3}
   description: 
   descriptionImage: {fileID: 0}
   isStackable: 1

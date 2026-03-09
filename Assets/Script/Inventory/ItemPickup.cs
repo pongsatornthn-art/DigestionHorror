@@ -1,16 +1,19 @@
 ﻿using UnityEngine;
 
+[RequireComponent(typeof(Collider2D))] // บังคับว่าต้องมี Collider 2D เสมอ
 public class ItemPickup : MonoBehaviour
 {
     [Header("ข้อมูลไอเท็ม")]
-    public ItemData item;             // ข้อมูลไอเท็มที่จะเข้ากระเป๋า
-    public float pickupRange = 3f;    // ระยะเก็บ
+    public ItemData item;
+    public float pickupRange = 3f;
 
     [Header("ตั้งค่ารูปภาพ (Visuals)")]
-    public GameObject normalObject;   // ลากตัวลูก: รูปปกติ
-    public GameObject hoverObject;    // ลากตัวลูก: รูปตอนเมาส์ชี้
+    public GameObject normalObject;
+    public GameObject hoverObject;
 
     private Transform player;
+    private bool isMouseOver = false;
+    private Collider2D col; // ตัวแปรเก็บกรอบฟิสิกส์ของไอเทม
 
     void Start()
     {
@@ -18,42 +21,51 @@ public class ItemPickup : MonoBehaviour
         GameObject p = GameObject.FindGameObjectWithTag("Player");
         if (p != null) player = p.transform;
 
+        // ดึงคอมโพเนนต์ Collider มาเตรียมไว้ใช้งาน
+        col = GetComponent<Collider2D>();
+
         // เริ่มเกม: เปิดตัวปกติ, ปิดตัวตอนชี้
         UpdateVisuals(false);
     }
 
-    void OnMouseEnter()
+    void Update()
     {
-        // เมาส์เข้า -> โชว์รูป Hover
-        UpdateVisuals(true);
-    }
+        // 1. แปลงตำแหน่งเมาส์บนหน้าจอ ให้เป็นตำแหน่งในโลกของเกม
+        Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-    void OnMouseExit()
-    {
-        // เมาส์ออก -> โชว์รูปปกติ
-        UpdateVisuals(false);
-    }
+        // 2. เช็คว่าเมาส์จิ้มโดนกรอบฟิสิกส์ของไอเทมชิ้นนี้อยู่ไหม (แม่นยำและไม่จำศีลแน่นอน)
+        bool isHoveringNow = col.OverlapPoint(mouseWorldPos);
 
-    void OnMouseOver()
-    {
-        if (player == null) return;
-
-        // เช็คระยะห่าง
-        if (Vector2.Distance(transform.position, player.position) <= pickupRange)
+        // 3. ถ้าสถานะการชี้เปลี่ยนไป (เพิ่งชี้ หรือ เพิ่งเอาเมาส์ออก) ให้สลับรูปภาพ
+        if (isHoveringNow != isMouseOver)
         {
-            // ถ้าอยู่ในระยะและกด E
-            if (Input.GetKeyDown(KeyCode.E))
+            isMouseOver = isHoveringNow;
+            UpdateVisuals(isMouseOver);
+        }
+
+        // 4. ระบบกดปุ่มเก็บของ
+        if (isMouseOver && player != null)
+        {
+            // เช็คระยะห่างระหว่างตัวละครกับไอเทม
+            if (Vector2.Distance(transform.position, player.position) <= pickupRange)
             {
-                if (Inventory.instance.AddItem(item))
+                if (Input.GetKeyDown(KeyCode.E))
                 {
-                    Debug.Log("เก็บของ: " + item.itemName);
-                    Destroy(gameObject); // ทำลายตัวเองทิ้ง
+                    if (Inventory.instance != null && Inventory.instance.AddItem(item))
+                    {
+                        Debug.Log("เก็บของสำเร็จ: " + item.itemName);
+                        Destroy(gameObject);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("❌ เก็บไม่ได้! กระเป๋าเต็ม หรือระบบ Inventory มีปัญหา");
+                    }
                 }
             }
         }
     }
 
-    // ฟังก์ชันช่วยสลับรูป (จะได้ไม่ต้องเขียนซ้ำ)
+    // ฟังก์ชันช่วยสลับรูปภาพ
     void UpdateVisuals(bool isHovering)
     {
         if (normalObject != null) normalObject.SetActive(!isHovering);

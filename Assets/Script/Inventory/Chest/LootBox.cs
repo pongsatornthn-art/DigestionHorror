@@ -11,7 +11,7 @@ public class LootBox : MonoBehaviour
     public bool destroyAfterOpen = false;
 
     [Header("Interaction (ระยะการเปิดกล่อง)")]
-    public float interactRange = 2f; // ⭐ ปรับระยะการยืนเปิดกล่องได้ที่ Inspector
+    public float interactRange = 2f;
     private Transform player;
 
     private bool isPlayerDeathBox = false;
@@ -25,17 +25,7 @@ public class LootBox : MonoBehaviour
 
     void Start()
     {
-        // เริ่มเกมปุ๊บ สั่งให้กล่องรายงานตัวเลยว่าหา Player เจอไหม
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
-        {
-            player = playerObj.transform;
-            Debug.Log("✅ [LootBox] เจอตัว Player แล้ว!");
-        }
-        else
-        {
-            Debug.LogError("❌ [LootBox] หาตัว Player ไม่เจอ! (ลืมตั้ง Tag เป็น Player ให้ตัวละครหรือเปล่า?)");
-        }
+        FindPlayer();
 
         if (!isPlayerDeathBox && lootTable != null)
         {
@@ -43,63 +33,97 @@ public class LootBox : MonoBehaviour
         }
     }
 
+    void FindPlayer()
+    {
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+        {
+            player = playerObj.transform;
+        }
+    }
+
     void Update()
     {
-        // ดักจับเวลากดปุ่ม E ดูก่อนเลย
         if (Input.GetKeyDown(KeyCode.E))
         {
             if (player == null)
             {
-                Debug.LogWarning("⚠️ กด E แล้ว แต่ระบบหาตัว Player ไม่เจอ (กลับไปเช็ค Tag ด่วน!)");
-                return; // หยุดทำงานทันที
+                FindPlayer();
+                if (player == null) return;
             }
 
-            // คำนวณระยะห่าง แล้วปริ้นท์บอกใน Console
             float distance = Vector2.Distance(transform.position, player.position);
-            Debug.Log($"📏 กด E แล้ว! ระยะห่างคือ: {distance} (ระยะที่เปิดได้คือ {interactRange})");
 
             if (distance <= interactRange)
             {
+                // ตรวจสอบก่อนว่าเปิดอยู่ไหม
                 bool isChestOpen = ChestUI.instance != null && ChestUI.instance.chestPanel.activeSelf;
                 if (!isChestOpen)
                 {
-                    Debug.Log("🔓 อยู่ในระยะ! กำลังสั่งเปิดกล่อง...");
                     OpenChest();
                 }
-                else
-                {
-                    Debug.Log("⚠️ หน้าต่างกล่องเปิดอยู่แล้ว");
-                }
-            }
-            else
-            {
-                Debug.Log("❌ อยู่ไกลเกินไป เปิดไม่ได้! ต้องเดินเข้าไปใกล้กว่านี้");
             }
         }
     }
 
-    // ❌ เราจะลบ OnMouseEnter กับ OnMouseExit ทิ้งไปเลยครับ ไม่ต้องใช้เมาส์ชี้แล้ว!
+    // ⭐ เพิ่มฟังก์ชันนี้: งัด UI ขึ้นมาแม้จะโดนปิดซ่อนอยู่!
+    void WakeUpUI()
+    {
+        if (ChestUI.instance == null)
+        {
+            // ค้นหาแบบทะลุมิติ (หาเจอแม้ GameObject จะโดนติ๊กปิดไว้)
+            ChestUI[] foundChests = Resources.FindObjectsOfTypeAll<ChestUI>();
+            if (foundChests.Length > 0)
+            {
+                ChestUI.instance = foundChests[0];
+                ChestUI.instance.gameObject.SetActive(true); // บังคับติ๊กถูกเปิดตัวแม่
+            }
+        }
+
+        if (InventoryUI.instance == null)
+        {
+            InventoryUI[] foundInvs = Resources.FindObjectsOfTypeAll<InventoryUI>();
+            if (foundInvs.Length > 0)
+            {
+                InventoryUI.instance = foundInvs[0];
+                InventoryUI.instance.gameObject.SetActive(true); // บังคับติ๊กถูกเปิดตัวแม่
+            }
+        }
+    }
 
     void OpenChest()
     {
-        Debug.Log("🔓 สั่งเปิดกล่องและกระเป๋าแล้ว!");
+        // 1. เรียกใช้ระบบปลุก UI ก่อนเลย
+        WakeUpUI();
 
-        // 1. สั่งเปิดหน้าต่างกล่อง
+        // 2. สั่งเปิดหน้าต่างกล่อง
         if (ChestUI.instance != null)
         {
             ChestUI.instance.ShowChest(this);
         }
-
-        // ⭐ 2. สั่งบังคับเปิดหน้าต่างกระเป๋าตรงๆ (ห้ามใช้ ToggleInventory() ตรงนี้เด็ดขาด!)
-        if (InventoryUI.instance != null)
+        else
         {
-            InventoryUI.instance.inventoryPanel.SetActive(true);
-
-            // ถ้าอยากให้หน้าต่างคราฟต์เปิดมาพร้อมกล่องด้วย ก็เอา // ข้างหน้าบรรทัดล่างออกครับ
-            if (InventoryUI.instance.craftingPanel != null) InventoryUI.instance.craftingPanel.SetActive(true);
+            Debug.LogError("❌ หา ChestUI ไม่เจอในโปรเจกต์เลย!");
+            return;
         }
 
-        // 3. เริ่มนับเวลาทำลายกล่อง (ถ้าเป็นกล่องคนตาย หรือตั้งค่าให้ลบ)
+        // 3. สั่งบังคับเปิดหน้าต่างกระเป๋า และ "บังคับปิด" หน้าต่างคราฟต์!
+        if (InventoryUI.instance != null)
+        {
+            // เปิดกระเป๋า
+            if (InventoryUI.instance.inventoryPanel != null)
+            {
+                InventoryUI.instance.inventoryPanel.SetActive(true);
+            }
+
+            // ⭐ บังคับปิดหน้าคราฟต์เด็ดขาด! (เพิ่ม SetActive เป็น false)
+            if (InventoryUI.instance.craftingPanel != null)
+            {
+                InventoryUI.instance.craftingPanel.SetActive(false);
+            }
+        }
+
+        // 4. เริ่มนับเวลาทำลายกล่อง
         if ((isPlayerDeathBox || destroyAfterOpen) && !hasStartedDestroyTimer)
         {
             hasStartedDestroyTimer = true;
@@ -107,17 +131,8 @@ public class LootBox : MonoBehaviour
         }
     }
 
-    public void RemoveItem(InventoryItem itemToRemove)
-    {
-        if (boxContents.Contains(itemToRemove))
-        {
-            boxContents.Remove(itemToRemove);
-        }
-    }
-
     void OnDestroy()
     {
-        // เติมเงื่อนไขเช็คว่าหน้าต่าง != null (ยังไม่ถูกลบ) ก่อนเข้าไปสั่งปิด
         if (ChestUI.instance != null && ChestUI.instance.chestPanel != null && ChestUI.instance.chestPanel.activeSelf)
         {
             ChestUI.instance.CloseChest();
@@ -129,10 +144,17 @@ public class LootBox : MonoBehaviour
         }
     }
 
-    // ⭐ เพิ่มฟังก์ชันนี้ เพื่อให้มีเส้นวงกลมสีเหลืองวาดบอกระยะรอบๆ กล่อง (ดูได้ในหน้า Scene)
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, interactRange);
+    }
+
+    public void RemoveItem(InventoryItem itemToRemove)
+    {
+        if (boxContents.Contains(itemToRemove))
+        {
+            boxContents.Remove(itemToRemove);
+        }
     }
 }

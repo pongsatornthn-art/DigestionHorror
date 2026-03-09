@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f363b3cc3d5c1b3458c8457fe9ddbae4, type: 3}
-  m_Name: "\u0E43\u0E1A\u0E02\u0E27\u0E32\u0E19"
+  m_Name: whetstone
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: ax blade
-  icon: {fileID: -3432792937102018733, guid: 305c3d914f6bb63438a3871f3c7f608a, type: 3}
+  itemName: whetstone
+  icon: {fileID: -6276408390063833456, guid: 5e92ac573584a4d4d8762c86f520ae72, type: 3}
   description: 
   descriptionImage: {fileID: 0}
   isStackable: 1

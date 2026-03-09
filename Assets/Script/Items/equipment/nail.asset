@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f363b3cc3d5c1b3458c8457fe9ddbae4, type: 3}
-  m_Name: "\u0E44\u0E27\u0E19\u0E4C"
+  m_Name: nail
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: "\u0E44\u0E27\u0E19\u0E4C"
-  icon: {fileID: -8638005434913105384, guid: f77f670b246ac5d41aef50a5cb2ea540, type: 3}
+  itemName: nail
+  icon: {fileID: 6284030141690318049, guid: 330140dfdae2a95478b81a87afb3c52b, type: 3}
   description: 
   descriptionImage: {fileID: 0}
   isStackable: 1
-  maxStack: 1
+  maxStack: 5
   itemType: 0
   equippedSprite: {fileID: 0}
   weaponAnimatorOverride: {fileID: 0}

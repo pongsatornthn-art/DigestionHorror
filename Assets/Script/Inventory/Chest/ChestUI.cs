@@ -92,6 +92,13 @@ public class ChestUI : MonoBehaviour
                 {
                     InventoryItem itemInfo = currentBox.boxContents[i];
 
+                    // ⭐ [เพิ่มใหม่] ป้องกันบัคไอเทมหายตอน Build แล้วทำให้ระบบกล่องพัง
+                    if (itemInfo == null || itemInfo.itemData == null)
+                    {
+                        Debug.LogWarning($"⚠️ ตรวจพบไอเทมพังในกล่องช่องที่ {i} (ข้ามการแสดงผล)");
+                        continue;
+                    }
+
                     slots[i].AddItem(itemInfo.itemData, itemInfo.amount, false);
 
                     int index = i;
@@ -119,6 +126,7 @@ public class ChestUI : MonoBehaviour
             {
                 Debug.Log("กระเป๋าเต็ม! หยิบไม่ได้");
             }
+
         }
     }
 }
