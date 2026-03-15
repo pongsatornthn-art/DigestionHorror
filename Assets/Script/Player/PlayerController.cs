@@ -3,12 +3,12 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using TMPro;
-using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
     public static PlayerController instance;
 
+    // ⭐ [เพิ่มจากเพื่อน] เรียกใช้ PlayerStatus
     private PlayerStatus status;
 
     [Header("References")]
@@ -18,17 +18,6 @@ public class PlayerController : MonoBehaviour
     public Transform legsTransform;
     private Animator bodyAnim;
     private Animator legAnim;
-
-    [Header("Dash Settings")]
-    public float dashSpeed = 15f;
-    public float dashDuration = 0.2f;
-    public float dashCooldown = 1f;
-    public float iFrameDuration = 0.5f;
-    public float dashStaminaCost = 20f;
-    public AudioClip dashSound;
-    private bool isDashing = false;
-    private bool canDash = true;
-    private bool isInvulnerable = false;
 
     [Header("Weapon Durability System")]
     public Weapon[] allWeapons;
@@ -63,11 +52,25 @@ public class PlayerController : MonoBehaviour
     private Vector2 movement;
     private Vector2 mousePos;
 
+    // ⭐ [เพิ่ม] ระบบเสียงเดิน
     [Header("Footstep Sounds")]
     public AudioClip[] footstepSounds;
     public float walkStepInterval = 0.5f;
     public float runStepInterval = 0.3f;
     private float stepTimer = 0f;
+
+    // ==========================================
+    // ⭐ [เพิ่มใหม่] ระบบผลักและดึง (Push & Pull)
+    // ==========================================
+    [Header("Push & Pull System")]
+    public Transform grabPoint;      // จุดที่ยื่นมือไปจับ (สร้าง Empty GameObject หน้าตัวละคร)
+    public float grabRange = 0.5f;   // ระยะการจับ
+    public LayerMask draggableLayer; // เลเยอร์ของสิ่งของที่จับได้
+
+    private DraggableObject currentGrabbedObj;
+    private FixedJoint2D grabJoint;
+    private float originalWalkSpeed;
+    private float originalRunSpeed;
 
     [Header("Combat Settings")]
     public Transform attackPoint;
@@ -94,8 +97,7 @@ public class PlayerController : MonoBehaviour
     public int currentMoney = 500;
     public TextMeshProUGUI moneyText;
 
-    // ⭐ [เพิ่มใหม่] ตัวแปรเช็คว่ากำลังคราฟต์ของอยู่ไหม
-    private bool isCrafting = false;
+    public bool isCrafting = false;
 
     void Awake() => instance = this;
 
@@ -107,6 +109,9 @@ public class PlayerController : MonoBehaviour
 
         currentHealth = maxHealth;
         currentStamina = maxStamina;
+
+        originalWalkSpeed = walkSpeed;
+        originalRunSpeed = runSpeed;
 
         UpdateUI();
         Time.timeScale = 1f;
@@ -121,14 +126,10 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // ⭐ [เพิ่ม] ถ้ากำลังคราฟต์ของอยู่ ห้ามทำอะไรเลย
-        if (isCrafting) return;
-
-        if (isDashing) return;
-
-        if ((InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
+        if (isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
         {
             movement = Vector2.zero;
+            if (currentGrabbedObj != null) ReleaseObject();
             return;
         }
 
@@ -139,97 +140,82 @@ public class PlayerController : MonoBehaviour
         }
 
         HandleInput();
-
-        if (Input.GetKeyDown(KeyCode.Space) && canDash)
-        {
-            if (currentStamina >= dashStaminaCost)
-            {
-                StartCoroutine(DashRoutine());
-            }
-        }
-
         UpdateUI();
         HandleCombatInput();
+        HandleGrabInput();
         UpdateAnimationParams();
         HandleFootsteps();
     }
 
     void FixedUpdate()
     {
-        if (isDashing || isKnockbacked || isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
+        if (isKnockbacked || isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
 
         rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
 
+        // คำนวณองศาจากเมาส์
         Vector2 lookDir = mousePos - rb.position;
         float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
 
         if (currentActiveHolder != null)
             currentActiveHolder.transform.rotation = Quaternion.Euler(0, 0, angle);
 
+        // หมุนท่อนบนตามเมาส์
         if (bodyTransform != null) bodyTransform.rotation = Quaternion.Euler(0, 0, angle);
 
-        if (legsTransform != null)
-        {
-            if (movement.magnitude > 0.1f)
-            {
-                float angleLegs = Mathf.Atan2(movement.y, movement.x) * Mathf.Rad2Deg - 90f;
-                legsTransform.rotation = Quaternion.Lerp(legsTransform.rotation, Quaternion.Euler(0, 0, angleLegs), 0.2f);
-            }
-            else
-            {
-                legsTransform.rotation = Quaternion.Lerp(legsTransform.rotation, Quaternion.Euler(0, 0, angle), 0.1f);
-            }
-        }
+        // ⭐ หมุนขา (ท่อนล่าง) ตามเมาส์ด้วย องศาเดียวกันเป๊ะ!
+        if (legsTransform != null) legsTransform.rotation = Quaternion.Euler(0, 0, angle);
     }
 
-    // ⭐ [เพิ่มใหม่] ฟังก์ชันสำหรับให้ CraftingManager เรียกใช้ตอนเริ่ม/หยุดคราฟต์
-    public void SetCraftingState(bool state)
+    // ==========================================
+    // ⭐ ระบบผลักและดึง (Push & Pull)
+    // ==========================================
+    void HandleGrabInput()
     {
-        isCrafting = state;
-        if (state)
+        if (Input.GetKeyDown(KeyCode.E) && currentGrabbedObj == null)
         {
-            movement = Vector2.zero; // หยุดเดินทันที
-            // ถ้ามีอนิเมชั่นก้มคราฟต์ ก็ให้ใส่ตรงนี้ได้เลย (เช่น bodyAnim.SetTrigger("Craft");)
+            Collider2D col = Physics2D.OverlapCircle(grabPoint.position, grabRange, draggableLayer);
+            if (col != null)
+            {
+                DraggableObject draggable = col.GetComponent<DraggableObject>();
+                if (draggable != null) GrabObject(draggable);
+            }
+        }
+        else if (Input.GetKeyUp(KeyCode.E) && currentGrabbedObj != null)
+        {
+            ReleaseObject();
         }
     }
 
-    private IEnumerator DashRoutine()
+    void GrabObject(DraggableObject obj)
     {
-        canDash = false;
-        isDashing = true;
-        isInvulnerable = true;
-
-        currentStamina -= dashStaminaCost;
-        UpdateUI();
-
-        if (audioSource != null && dashSound != null) audioSource.PlayOneShot(dashSound);
-
-        if (bodyAnim != null) bodyAnim.SetTrigger("Dash");
-        if (legAnim != null) legAnim.SetTrigger("Dash");
-
-        Vector2 dashDir = movement.magnitude > 0.1f ? movement.normalized : (mousePos - rb.position).normalized;
-        rb.linearVelocity = dashDir * dashSpeed;
-
-        yield return new WaitForSeconds(dashDuration);
-
-        isDashing = false;
-        rb.linearVelocity = Vector2.zero;
-
-        float remainingIFrame = Mathf.Max(0, iFrameDuration - dashDuration);
-        if (remainingIFrame > 0)
-        {
-            yield return new WaitForSeconds(remainingIFrame);
-        }
-
-        isInvulnerable = false;
-
-        yield return new WaitForSeconds(dashCooldown);
-        canDash = true;
+        currentGrabbedObj = obj;
+        grabJoint = gameObject.AddComponent<FixedJoint2D>();
+        grabJoint.connectedBody = obj.GetComponent<Rigidbody2D>();
+        walkSpeed = originalWalkSpeed / obj.weight;
+        runSpeed = originalRunSpeed / obj.weight;
+        obj.StartDragging();
     }
+
+    void ReleaseObject()
+    {
+        if (grabJoint != null) Destroy(grabJoint);
+        if (currentGrabbedObj != null)
+        {
+            currentGrabbedObj.StopDragging();
+            currentGrabbedObj = null;
+        }
+        walkSpeed = originalWalkSpeed;
+        runSpeed = originalRunSpeed;
+    }
+
+    // ==========================================
+    // ฟังก์ชันอื่นๆ คงเดิมทั้งหมด
+    // ==========================================
 
     void HandleFootsteps()
     {
-        if (movement.magnitude <= 0.1f || isKnockbacked || isDashing)
+        if (movement.magnitude <= 0.1f || isKnockbacked)
         {
             stepTimer = 0f;
             return;
@@ -256,7 +242,7 @@ public class PlayerController : MonoBehaviour
 
     public void ApplyKnockback(Vector2 force)
     {
-        if (isKnockbacked || isDashing) return;
+        if (isKnockbacked) return;
 
         StopAllCoroutines();
         StartCoroutine(KnockbackRoutine(force));
@@ -276,8 +262,6 @@ public class PlayerController : MonoBehaviour
 
     public void PlayerTakeDamage(int dmg)
     {
-        if (isInvulnerable) return;
-
         currentHealth = Mathf.Max(0, currentHealth - dmg);
         UpdateUI();
         if (currentHealth <= 0) Die();
@@ -287,6 +271,10 @@ public class PlayerController : MonoBehaviour
 
     void Die()
     {
+        Debug.Log("💀 Player ตายแล้ว! กำลังเริ่มระบบดรอปกล่อง...");
+
+        if (currentGrabbedObj != null) ReleaseObject();
+
         if (playerDeathBoxPrefab != null && Inventory.Instance != null)
         {
             List<InventoryItem> droppedItems = Inventory.Instance.DropAllItemsExcept("Knife");
@@ -295,12 +283,18 @@ public class PlayerController : MonoBehaviour
             {
                 GameObject boxObj = Instantiate(playerDeathBoxPrefab, transform.position, Quaternion.identity);
                 LootBox deathBox = boxObj.GetComponent<LootBox>();
-                if (deathBox != null) deathBox.SetBoxContents(droppedItems);
+
+                if (deathBox != null)
+                {
+                    deathBox.SetBoxContents(droppedItems);
+                }
             }
         }
 
         if (currentActiveHolder != null)
+        {
             currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
+        }
 
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
         this.enabled = false;
@@ -310,28 +304,40 @@ public class PlayerController : MonoBehaviour
     public void RestartGame()
     {
         Time.timeScale = 1f;
+
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
         currentHealth = maxHealth;
         currentStamina = maxStamina;
         UpdateUI();
-        if (currentActiveHolder != null) currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", false);
-        if (respawnPoint != null) transform.position = respawnPoint.position;
+
+        if (currentActiveHolder != null)
+        {
+            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", false);
+        }
+        if (respawnPoint != null)
+        {
+            transform.position = respawnPoint.position;
+        }
         this.enabled = true;
         isKnockbacked = false;
-        isDashing = false;
-        isInvulnerable = false;
     }
 
     public void EquipWeapon(ItemData newItem)
     {
         currentWeapon = newItem;
+
         if (knifeHolder) knifeHolder.SetActive(false);
         if (axeHolder) axeHolder.SetActive(false);
         if (nailStickHolder) nailStickHolder.SetActive(false);
         currentActiveHolder = null;
 
         bool isWeapon = (newItem != null && newItem.itemType == ItemType.Weapon);
-        if (durabilityUI != null) durabilityUI.SetActive(isWeapon);
+
+        if (durabilityUI != null)
+        {
+            durabilityUI.SetActive(isWeapon);
+        }
 
         if (!isWeapon)
         {
@@ -347,8 +353,12 @@ public class PlayerController : MonoBehaviour
         {
             if (bodyTransform != null) bodyTransform.gameObject.SetActive(false);
             currentActiveHolder.SetActive(true);
+
             Weapon activeWeapon = currentActiveHolder.GetComponent<Weapon>();
-            if (activeWeapon != null) activeWeapon.UpdateUI();
+            if (activeWeapon != null)
+            {
+                activeWeapon.UpdateUI();
+            }
         }
     }
 
@@ -404,23 +414,30 @@ public class PlayerController : MonoBehaviour
     void PerformAttack(bool isLight)
     {
         if (currentWeapon == null) return;
+
         Weapon activeWeapon = GetActiveWeapon();
 
         if (activeWeapon != null && activeWeapon.IsBroken())
         {
+            Debug.Log("โจมตีไม่ได้! อาวุธพังแล้ว ต้องซ่อมก่อนกด C");
             if (audioSource != null && brokenWeaponSound != null) audioSource.PlayOneShot(brokenWeaponSound);
             nextAttackTime = Time.time + 0.3f;
             return;
         }
 
         float cost = isLight ? currentWeapon.staminaCost : currentWeapon.heavyStaminaCost;
-        if (currentStamina < cost) return;
+        if (currentStamina < cost)
+        {
+            Debug.Log("Stamina ไม่พอ!");
+            return;
+        }
 
         currentStamina -= cost;
         float cooldown = isLight ? currentWeapon.lightAttackCooldown : currentWeapon.heavyAttackCooldown;
         nextAttackTime = Time.time + cooldown;
 
         if (activeWeapon != null) activeWeapon.UseWeapon(durabilityLossPerHit);
+
         pendingDamage = isLight ? currentWeapon.damage : currentWeapon.heavyDamage;
 
         if (currentActiveHolder != null)
@@ -430,8 +447,10 @@ public class PlayerController : MonoBehaviour
             {
                 weaponAnim.SetBool("IsLight", isLight);
                 weaponAnim.SetTrigger("Attack");
+
                 if (audioSource) audioSource.pitch = 1f;
                 if (audioSource && swingSound) audioSource.PlayOneShot(swingSound);
+
                 Invoke("DealDamage", 0.2f);
             }
         }
@@ -464,13 +483,16 @@ public class PlayerController : MonoBehaviour
     Weapon GetActiveWeapon()
     {
         foreach (Weapon weapon in allWeapons)
+        {
             if (weapon != null && weapon.gameObject.activeInHierarchy) return weapon;
+        }
         return null;
     }
 
     void ConsumeItem()
     {
         if (currentWeapon == null || currentWeapon.itemType != ItemType.Consumable) return;
+
         if (DigestionSystem.instance != null) DigestionSystem.instance.DecreaseDigestion(currentWeapon.digestionReduceAmount);
         if (Inventory.instance != null) Inventory.instance.RemoveItem(currentWeapon);
     }
@@ -478,7 +500,21 @@ public class PlayerController : MonoBehaviour
     void UseTotem()
     {
         if (currentWeapon == null || currentWeapon.itemType != ItemType.Totem) return;
+
         if (DigestionSystem.instance != null) DigestionSystem.instance.ApplyTotemBuff(currentWeapon.digestionSlowMultiplier, currentWeapon.totemEffectDuration);
         if (Inventory.instance != null) Inventory.instance.RemoveItem(currentWeapon);
+    }
+
+    public void SetCraftingState(bool state)
+    {
+        isCrafting = state;
+
+        if (bodyAnim != null) bodyAnim.SetBool("IsCrafting", state);
+        if (legAnim != null) legAnim.SetBool("IsCrafting", state);
+
+        if (currentActiveHolder != null)
+        {
+            currentActiveHolder.SetActive(!state);
+        }
     }
 }

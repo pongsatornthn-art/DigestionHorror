@@ -1,19 +1,19 @@
 fileFormatVersion: 2
-guid: d4c7d3ff88f787243b494d1c84d5afaf
+guid: cf0f9ec53425bb74b84d499f08dfd635
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 418050016691846206
-    second: ref_kid_0
+      213: 5730067960060285446
+    second: ref_grass_0
   - first:
-      213: -8285353878665217574
-    second: ref_kid_1
+      213: 910454786839270327
+    second: ref_grass_1
   - first:
-      213: -8404772534039008365
-    second: ref_kid_2
+      213: -6795476660802844160
+    second: ref_grass_2
   - first:
-      213: 2934319683690435186
-    second: ref_kid_3
+      213: 2399624581126285154
+    second: ref_grass_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,7 +46,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -84,7 +84,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -109,89 +109,89 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ref_kid_0
+      name: ref_grass_0
       rect:
         serializedVersion: 2
-        x: 14
-        y: 9
-        width: 36
-        height: 45
+        x: 11
+        y: 2
+        width: 40
+        height: 34
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e3c734776463dc500800000000000000
-      internalID: 418050016691846206
+      spriteID: 6029d32537a458f40800000000000000
+      internalID: 5730067960060285446
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ref_kid_1
+      name: ref_grass_1
       rect:
         serializedVersion: 2
-        x: 79
-        y: 9
-        width: 35
-        height: 50
+        x: 64
+        y: 2
+        width: 64
+        height: 34
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ad931c78b82840d80800000000000000
-      internalID: -8285353878665217574
+      spriteID: 7b3db990ec592ac00800000000000000
+      internalID: 910454786839270327
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ref_kid_2
+      name: ref_grass_2
       rect:
         serializedVersion: 2
-        x: 142
-        y: 9
-        width: 35
-        height: 50
+        x: 130
+        y: 2
+        width: 58
+        height: 53
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 39b25a229ef3c5b80800000000000000
-      internalID: -8404772534039008365
+      spriteID: 00a83612bfd91b1a0800000000000000
+      internalID: -6795476660802844160
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ref_kid_3
+      name: ref_grass_3
       rect:
         serializedVersion: 2
-        x: 206
-        y: 9
-        width: 36
-        height: 45
+        x: 203
+        y: 2
+        width: 40
+        height: 34
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2721ec3a43cc8b820800000000000000
-      internalID: 2934319683690435186
+      spriteID: 267e350c7dd2d4120800000000000000
+      internalID: 2399624581126285154
       vertices: []
       indices: 
       edges: []
@@ -200,7 +200,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 6886cd19821f46f4e923daef52405528
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -210,10 +210,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ref_kid_0: 418050016691846206
-      ref_kid_1: -8285353878665217574
-      ref_kid_2: -8404772534039008365
-      ref_kid_3: 2934319683690435186
+      ref_grass_0: 5730067960060285446
+      ref_grass_1: 910454786839270327
+      ref_grass_2: -6795476660802844160
+      ref_grass_3: 2399624581126285154
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

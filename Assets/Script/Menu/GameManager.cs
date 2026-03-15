@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Audio;
+using UnityEngine.Audio; // ⭐ ต้องเพิ่มอันนี้สำหรับ AudioMixer
 using System.IO;
 
 [System.Serializable]
@@ -17,10 +17,10 @@ public class GameManager : MonoBehaviour
     public static GameManager instance;
 
     [Header("UI Panels (หน้าต่างต่างๆ)")]
-    public GameObject pauseMainPanel;
-    public GameObject savePanel;
-    public GameObject loadPanel;
-    public GameObject settingsPanel;
+    public GameObject pauseMainPanel; // หน้าหยุดเกมหลัก (มีปุ่ม Resume, Save, Load, Settings)
+    public GameObject savePanel;      // หน้าเลือกช่องเซฟ
+    public GameObject loadPanel;      // หน้าเลือกช่องโหลด
+    public GameObject settingsPanel;  // หน้าตั้งค่าเสียง
 
     [Header("Audio Settings (ตั้งค่าเสียง)")]
     public AudioMixer mainMixer;
@@ -32,7 +32,6 @@ public class GameManager : MonoBehaviour
     public int currentSaveCount = 0;
 
     private bool isPaused = false;
-    private bool isAudioInitialized = false;
 
     void Awake()
     {
@@ -42,11 +41,14 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // 1. โหลดตั้งค่ามาใส่หลอด Slider ทิ้งไว้
-        if (musicSlider != null) musicSlider.value = PlayerPrefs.GetFloat("SavedMusicVol", 0.75f);
-        if (sfxSlider != null) sfxSlider.value = PlayerPrefs.GetFloat("SavedSFXVol", 0.75f);
+        // โหลดตั้งค่าเสียงที่เคยเซฟไว้ (ค่าเริ่มต้นคือ 0.75)
+        float savedMusic = PlayerPrefs.GetFloat("SavedMusicVol", 0.75f);
+        float savedSFX = PlayerPrefs.GetFloat("SavedSFXVol", 0.75f);
 
-        // 2. ปิดหน้าต่างทั้งหมดตอนเริ่มเกม
+        if (musicSlider != null) musicSlider.value = savedMusic;
+        if (sfxSlider != null) sfxSlider.value = savedSFX;
+
+        // ปิดหน้าต่างทั้งหมดตอนเริ่มเกม
         if (pauseMainPanel) pauseMainPanel.SetActive(false);
         if (savePanel) savePanel.SetActive(false);
         if (loadPanel) loadPanel.SetActive(false);
@@ -55,39 +57,6 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // ⭐ [ไม้ตายก้นหีบ] ตื้อ Mixer จนกว่าจะยอมตื่น!
-        if (!isAudioInitialized && mainMixer != null)
-        {
-            // 1. ดึงค่าเซฟ
-            float savedMusic = PlayerPrefs.GetFloat("SavedMusicVol", 0.75f);
-            float savedSFX = PlayerPrefs.GetFloat("SavedSFXVol", 0.75f);
-
-            // 2. เซฟตี้กันบั๊กเสียงหาย (ถ้าเป็น 0 ให้เด้งกลับมา 75%)
-            if (savedMusic <= 0.001f) savedMusic = 0.75f;
-            if (savedSFX <= 0.001f) savedSFX = 0.75f;
-
-            // 3. แปลงค่าเป็นเดซิเบลเพื่อเตรียมยิง
-            float dbMusic = Mathf.Log10(savedMusic) * 20f;
-            float dbSFX = Mathf.Log10(savedSFX) * 20f;
-
-            // 4. 🎯 ลองยิงคำสั่ง! ถ้า Mixer โหลดเสร็จและรับคำสั่ง มันจะคืนค่าเป็น true
-            bool isMixerReady = mainMixer.SetFloat("MusicVol", dbMusic);
-
-            if (isMixerReady)
-            {
-                // ถ้ายอมรับค่า Music แล้ว ก็ยิงค่า SFX ตามไปเลย
-                mainMixer.SetFloat("SFXVol", dbSFX);
-
-                // อัปเดตสไลเดอร์ให้ตรงกัน
-                if (musicSlider != null) musicSlider.value = savedMusic;
-                if (sfxSlider != null) sfxSlider.value = savedSFX;
-
-                isAudioInitialized = true; // ล็อกกุญแจ! ไม่ต้องทำซ้ำแล้ว
-                Debug.Log("🔊 Audio Mixer ตื่นเต็มตาและรับคำสั่งแล้ว!");
-            }
-        }
-
-        // ระบบกดปุ่ม Esc เปิดหน้าต่างของคุณ (โค้ดเดิม)
         if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
         {
             if (isPaused) ResumeGame();
@@ -102,7 +71,7 @@ public class GameManager : MonoBehaviour
     {
         isPaused = true;
         Time.timeScale = 0f;
-        ShowPauseMainMenu();
+        ShowPauseMainMenu(); // เปิดมาให้เจอหน้าหลักก่อนเสมอ
     }
 
     public void ResumeGame()
@@ -110,12 +79,14 @@ public class GameManager : MonoBehaviour
         isPaused = false;
         Time.timeScale = 1f;
 
+        // ปิดทุกหน้าต่าง
         if (pauseMainPanel) pauseMainPanel.SetActive(false);
         if (savePanel) savePanel.SetActive(false);
         if (loadPanel) loadPanel.SetActive(false);
         if (settingsPanel) settingsPanel.SetActive(false);
     }
 
+    // ฟังก์ชันสำหรับผูกกับปุ่มกด เพื่อสลับหน้าต่างไปมา
     public void ShowPauseMainMenu()
     {
         if (pauseMainPanel) pauseMainPanel.SetActive(true);
@@ -156,7 +127,7 @@ public class GameManager : MonoBehaviour
         if (mainMixer != null)
         {
             float dbValue = Mathf.Log10(Mathf.Max(sliderValue, 0.0001f)) * 20f;
-            mainMixer.SetFloat("MusicVol", dbValue);
+            mainMixer.SetFloat("MusicVol", dbValue); // ชื่ออ้างอิงจาก Audio Mixer
             PlayerPrefs.SetFloat("SavedMusicVol", sliderValue);
         }
     }
@@ -166,7 +137,7 @@ public class GameManager : MonoBehaviour
         if (mainMixer != null)
         {
             float dbValue = Mathf.Log10(Mathf.Max(sliderValue, 0.0001f)) * 20f;
-            mainMixer.SetFloat("SFXVol", dbValue);
+            mainMixer.SetFloat("SFXVol", dbValue); // ชื่ออ้างอิงจาก Audio Mixer
             PlayerPrefs.SetFloat("SavedSFXVol", sliderValue);
         }
     }
@@ -202,6 +173,7 @@ public class GameManager : MonoBehaviour
 
         Debug.Log($"✅ เซฟเกมลงช่อง {slotNumber} สำเร็จ! เหลือสิทธิ์เซฟอีก {maxSavesAllowed - currentSaveCount} ครั้ง");
 
+        // ⭐ สำคัญ: เมื่อเซฟเสร็จ ให้สั่งเปลี่ยนไปหน้าต่าง Load ทันที
         ShowLoadMenu();
     }
 
@@ -225,7 +197,7 @@ public class GameManager : MonoBehaviour
             }
 
             Debug.Log($"📂 โหลดเกมจากช่อง {slotNumber} สำเร็จ!");
-            ResumeGame();
+            ResumeGame(); // โหลดเสร็จ ปิดหน้าต่างเล่นต่อเลย
         }
         else
         {

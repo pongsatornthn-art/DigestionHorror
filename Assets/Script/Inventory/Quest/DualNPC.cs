@@ -18,12 +18,6 @@ public class DualNPC : MonoBehaviour
         public int pageToUnlock = 1;
         public GameObject startQuestUI;
         public GameObject successUI;
-
-        // ⭐ [เพิ่มใหม่] บทพูดเฉพาะของเควสนี้
-        [Header("--- บทพูดก่อนเริ่มเควสนี้ ---")]
-        [TextArea(2, 5)]
-        public string[] questDialogues;
-
         [HideInInspector] public bool isCompleted = false;
         [HideInInspector] public bool hasAccepted = false;
     }
@@ -31,41 +25,35 @@ public class DualNPC : MonoBehaviour
     [Header("NPC Basic Info")]
     public string npcName = "Mysterious Merchant";
     public Sprite portrait;
+    [TextArea] public string greetingText = "Welcome! How can I help you today?";
 
-    [Header("--- Dialogue System ---")]
-    public GameObject dialoguePanel;
-    public TextMeshProUGUI dialogueText;
-    public DialogueTypewriter typewriter;
-
-    // เปลี่ยนมาใช้ตัวแปรซ่อน เพื่อรับค่าจากเควสแทน
-    private string[] currentConversationLines;
-    private int currentLine = 0;
-    private bool isTalking = false;
-
-    [Header("--- Shop Settings ---")]
+    [Header("Shop Settings")]
     public List<ItemData> itemsForSale;
 
-    [Header("--- Quest Settings ---")]
+    [Header("Quest Settings")]
     public List<QuestData> quests = new List<QuestData>();
     private int currentQuestIndex = 0;
 
-    [Header("--- UI Selection Panel ---")]
-    public GameObject selectionPanel;
-    public Button shopButton;
-    public Button questButton;
-    public Button closeButton;
+    [Header("UI Selection Panel")]
+    public GameObject selectionPanel; // ลาก NPCSelectionPanel มาใส่
+    public Button shopButton;         // ลากปุ่ม Shop มาใส่
+    public Button questButton;        // ลากปุ่ม Quest มาใส่
+    public Button closeButton;        // ลากปุ่ม Close (ถ้ามี) มาใส่
 
-    [Header("--- General Settings ---")]
+    [Header("General Settings")]
     public float interactDistance = 3f;
     public GameObject allQuestsDoneUI;
 
     private Transform player;
+    private bool isMouseOver = false;
     private bool isShowingUI = false;
 
     void Start()
     {
-        if (PlayerController.instance != null) player = PlayerController.instance.transform;
+        if (PlayerController.instance != null)
+            player = PlayerController.instance.transform;
 
+        // ล้างค่า UI เควส
         foreach (var q in quests)
         {
             if (q.startQuestUI != null) q.startQuestUI.SetActive(false);
@@ -74,8 +62,8 @@ public class DualNPC : MonoBehaviour
 
         if (selectionPanel != null) selectionPanel.SetActive(false);
         if (allQuestsDoneUI != null) allQuestsDoneUI.SetActive(false);
-        if (dialoguePanel != null) dialoguePanel.SetActive(false);
 
+        // ⭐ ล้าง Event เก่าออกก่อนเพื่อกันบั๊กกดครั้งเดียวทำงานสองรอบ
         if (shopButton != null)
         {
             shopButton.onClick.RemoveAllListeners();
@@ -93,80 +81,48 @@ public class DualNPC : MonoBehaviour
         }
     }
 
+    void OnMouseEnter() { isMouseOver = true; }
+    void OnMouseExit() { isMouseOver = false; }
+
     void Update()
     {
+        // 1. เช็คก่อนว่าหา Player เจอไหม (ถ้าไม่เจอให้แจ้งเตือนสีเหลือง)
         if (player == null)
         {
-            if (PlayerController.instance != null) player = PlayerController.instance.transform;
+            Debug.LogWarning("⚠️ NPC ตัวนี้หา Player ไม่เจอ! ให้เช็คว่าสคริปต์ Player มีแท็กหรือ Instance ถูกต้องไหม");
+
+            // พยายามหา Player ใหม่เรื่อยๆ เผื่อ Player โหลดช้า
+            if (PlayerController.instance != null)
+                player = PlayerController.instance.transform;
+
             return;
         }
 
-        if (isShowingUI && !isTalking) return;
+        // 2. ถ้ากำลังเปิดหน้าต่าง UI อยู่ ให้ข้ามการกดปุ่มไปเลย
+        if (isShowingUI) return;
 
+        // 3. คำนวณระยะห่าง
         float dist = Vector2.Distance(transform.position, player.position);
 
+        // ⭐ ลบ isMouseOver ออกแล้ว! แค่เดินเข้าไปใกล้ๆ แล้วกด E ก็ติดเลย
         if (dist <= interactDistance && Input.GetKeyDown(KeyCode.E))
         {
-            if (!isTalking && !isShowingUI) StartConversation();
-            else if (isTalking) NextDialogueLine();
-        }
-    }
-
-    // ⭐ ดึงบทพูดของเควสปัจจุบันมาเล่น
-    void StartConversation()
-    {
-        // เช็คว่ายังมีเควสเหลือไหม
-        if (currentQuestIndex < quests.Count)
-        {
-            // ดึงบทพูดจากเควสปัจจุบันมาโหลดใส่
-            currentConversationLines = quests[currentQuestIndex].questDialogues;
-        }
-        else
-        {
-            // ถ้าทำเควสหมดแล้ว ให้พูดประโยคนี้แทน
-            currentConversationLines = new string[] { "Traveling Merchant : ไม่มีอะไรให้ทำแล้ว แวะมาแลกของได้อย่างเดียวนะไอ้หนุ่ม" };
-        }
-
-        // ถ้าไม่ได้ใส่บทพูดไว้ ให้ข้ามไปเปิดหน้าเมนูเลย
-        if (currentConversationLines == null || currentConversationLines.Length == 0)
-        {
-            OpenSelectionPanel();
-            return;
-        }
-
-        isTalking = true;
-        currentLine = 0;
-
-        if (dialoguePanel != null) dialoguePanel.SetActive(true);
-
-        if (typewriter != null) typewriter.PlayDialogue(currentConversationLines[currentLine]);
-        else if (dialogueText != null) dialogueText.text = currentConversationLines[currentLine];
-    }
-
-    void NextDialogueLine()
-    {
-        currentLine++;
-
-        if (currentLine < currentConversationLines.Length)
-        {
-            if (typewriter != null) typewriter.PlayDialogue(currentConversationLines[currentLine]);
-            else if (dialogueText != null) dialogueText.text = currentConversationLines[currentLine];
-        }
-        else
-        {
-            isTalking = false;
-            if (dialoguePanel != null) dialoguePanel.SetActive(false);
+            Debug.Log("✅ กด E สำเร็จ! กำลังเปิดหน้าต่างเลือก...");
             OpenSelectionPanel();
         }
     }
 
+    // --- ระบบ Selection UI ---
     void OpenSelectionPanel()
     {
         if (selectionPanel != null)
         {
             selectionPanel.SetActive(true);
             isShowingUI = true;
-            if (questButton != null) questButton.interactable = currentQuestIndex < quests.Count;
+
+            // ปิดปุ่มเควสถ้าทำครบหมดแล้ว
+            if (questButton != null)
+                questButton.interactable = currentQuestIndex < quests.Count;
         }
     }
 
@@ -176,20 +132,32 @@ public class DualNPC : MonoBehaviour
         isShowingUI = false;
     }
 
+    // --- ระบบ Shop (ดึงจาก ShopNPC เดิม) ---
     void OpenShopLogic()
     {
         CloseSelectionPanel();
-        if (ShopUI.instance != null) ShopUI.instance.OpenShop(this.gameObject.GetComponent<ShopNPC_Helper>());
+
+        if (ShopUI.instance != null)
+        {
+            // สร้าง ShopNPC ชั่วคราวเพื่อให้ ShopUI อ่านค่าได้ หรือปรับ ShopUI ให้รับค่าจาก DualNPC
+            ShopUI.instance.OpenShop(this.gameObject.GetComponent<ShopNPC_Helper>());
+        }
+
+        // เปิดกระเป๋าอัตโนมัติ
         if (InventoryUI.instance != null)
         {
-            if (InventoryUI.instance.inventoryPanel != null) InventoryUI.instance.inventoryPanel.SetActive(true);
-            if (InventoryUI.instance.craftingPanel != null) InventoryUI.instance.craftingPanel.SetActive(false);
+            if (InventoryUI.instance.inventoryPanel != null)
+                InventoryUI.instance.inventoryPanel.SetActive(true);
+            if (InventoryUI.instance.craftingPanel != null)
+                InventoryUI.instance.craftingPanel.SetActive(false);
         }
     }
 
+    // --- ระบบ Quest (ดึงจาก QuestNPC เดิม) ---
     void HandleQuestLogic()
     {
         CloseSelectionPanel();
+
         if (currentQuestIndex >= quests.Count) return;
 
         QuestData currentQuest = quests[currentQuestIndex];
@@ -201,20 +169,35 @@ public class DualNPC : MonoBehaviour
             return;
         }
 
-        if (Inventory.instance.HasItem(currentQuest.questItem, currentQuest.requiredAmount)) CompleteCurrentQuest(currentQuest);
-        else StartCoroutine(ShowQuestUI(currentQuest.startQuestUI));
+        if (Inventory.instance.HasItem(currentQuest.questItem, currentQuest.requiredAmount))
+        {
+            CompleteCurrentQuest(currentQuest);
+        }
+        else
+        {
+            StartCoroutine(ShowQuestUI(currentQuest.startQuestUI));
+        }
     }
 
     void CompleteCurrentQuest(QuestData quest)
     {
         quest.isCompleted = true;
-        if (quest.questType == QuestType.Consumable) Inventory.instance.RemoveItem(quest.questItem, quest.requiredAmount);
-        if (BookUI.instance != null) BookUI.instance.UnlockNewPage(quest.pageToUnlock);
+
+        if (quest.questType == QuestType.Consumable)
+        {
+            Inventory.instance.RemoveItem(quest.questItem, quest.requiredAmount);
+        }
+
+        if (BookUI.instance != null)
+            BookUI.instance.UnlockNewPage(quest.pageToUnlock);
 
         StartCoroutine(ShowQuestUI(quest.successUI));
         currentQuestIndex++;
 
-        if (currentQuestIndex >= quests.Count && allQuestsDoneUI != null) allQuestsDoneUI.SetActive(true);
+        if (currentQuestIndex >= quests.Count && allQuestsDoneUI != null)
+        {
+            allQuestsDoneUI.SetActive(true);
+        }
     }
 
     IEnumerator ShowQuestUI(GameObject uiObject)
