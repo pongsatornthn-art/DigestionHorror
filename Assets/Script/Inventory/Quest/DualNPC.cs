@@ -17,17 +17,20 @@ public class DualNPC : MonoBehaviour
         public int requiredAmount = 1;
         public int pageToUnlock = 1;
 
+        [Header("บทสนทนาประจำเควสนี้")]
+        [TextArea] public string questGreeting = "ยินดีต้อนรับ! มีอะไรให้ข้าช่วยไหม?";
         [TextArea] public string questStartDialogue = "เจ้าช่วยหาของสิ่งนี้มาให้ข้าหน่อยได้ไหม?";
         [TextArea] public string questSuccessDialogue = "โอ้! ขอบใจเจ้ามาก นี่คือรางวัลของเจ้า!";
 
         [HideInInspector] public bool isCompleted = false;
         [HideInInspector] public bool hasAccepted = false;
+        [HideInInspector] public bool hasGreetedThisQuest = false;
     }
 
     [Header("NPC Basic Info")]
     public string npcName = "Mysterious Merchant";
     public Sprite portrait;
-    [TextArea] public string greetingText = "Welcome!";
+    [TextArea] public string fallbackGreeting = "ไม่มีอะไรให้เจ้าทำแล้วล่ะไอ้หนุ่ม...";
 
     [Header("Dialogue UI Settings")]
     public GameObject dialoguePanel;
@@ -54,7 +57,7 @@ public class DualNPC : MonoBehaviour
     private Transform player;
     private bool isShowingUI = false;
     private Coroutine typingCoroutine;
-    private bool hasGreeted = false;
+    private bool fallbackHasGreeted = false;
 
     void Start()
     {
@@ -108,19 +111,26 @@ public class DualNPC : MonoBehaviour
 
         if (typingCoroutine != null) StopCoroutine(typingCoroutine);
 
-        if (!hasGreeted)
+        string textToSay = "";
+        bool shouldSkip = false;
+
+        if (currentQuestIndex < quests.Count)
         {
-            typingCoroutine = StartCoroutine(TypeDialogueCoroutine(greetingText, true));
+            textToSay = quests[currentQuestIndex].questGreeting;
+            shouldSkip = quests[currentQuestIndex].hasGreetedThisQuest;
         }
         else
         {
-            typingCoroutine = StartCoroutine(TypeDialogueCoroutine(greetingText, true, true));
+            textToSay = fallbackGreeting;
+            shouldSkip = fallbackHasGreeted;
         }
+
+        typingCoroutine = StartCoroutine(TypeDialogueCoroutine(textToSay, true, shouldSkip));
     }
 
     IEnumerator TypeDialogueCoroutine(string textToType, bool isGreeting, bool skipTyping = false)
     {
-        string fullText = npcName + " : " + textToType;
+        string fullText = textToType;
 
         yield return new WaitForSeconds(0.1f); // กันบั๊กปุ่มลั่น
 
@@ -129,20 +139,21 @@ public class DualNPC : MonoBehaviour
             if (skipTyping)
             {
                 dialogueText.text = fullText;
+                yield return StartCoroutine(ForceRefreshUI()); // 🪄 เรียกใช้นิวเคลียร์!
             }
             else
             {
-                dialogueText.text = npcName + " : ";
+                dialogueText.text = ""; // เคลียร์ข้อความให้ว่าง
 
-                foreach (char letter in textToType.ToCharArray())
+                foreach (char letter in fullText.ToCharArray())
                 {
                     dialogueText.text += letter;
 
-                    // ⭐ ตัดเมาส์ออก เหลือแค่กด E หรือ Spacebar เพื่อเร่งตัวหนังสือ
                     if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space))
                     {
                         dialogueText.text = fullText;
-                        yield return new WaitForSeconds(0.2f);
+                        yield return StartCoroutine(ForceRefreshUI()); // 🪄 เรียกใช้นิวเคลียร์!
+                        yield return new WaitForSeconds(0.2f); // กันปุ่มลั่นเบิ้ล
                         break;
                     }
 
@@ -151,20 +162,48 @@ public class DualNPC : MonoBehaviour
             }
         }
 
-        // ⭐ ตัดเมาส์ออก รอจนกว่าผู้เล่นจะกด E หรือ Space เพื่อไปต่อ!
         yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space));
 
         yield return new WaitForSeconds(0.1f);
 
         if (isGreeting)
         {
-            hasGreeted = true;
+            if (currentQuestIndex < quests.Count)
+                quests[currentQuestIndex].hasGreetedThisQuest = true;
+            else
+                fallbackHasGreeted = true;
+
             OpenSelectionPanel();
         }
         else
         {
             CloseEverything();
         }
+    }
+
+    // 💣 นิวเคลียร์บังคับรีเฟรช UI (ลึกแค่ไหนก็ต้องขยาย!)
+    IEnumerator ForceRefreshUI()
+    {
+        yield return new WaitForEndOfFrame();
+
+        if (dialogueText != null)
+        {
+            dialogueText.ForceMeshUpdate(); // สั่ง Text ขยาย
+
+            RectTransform textRect = dialogueText.GetComponent<RectTransform>();
+            if (textRect != null)
+            {
+                // สั่งกระดาษ (Text) ขยายเดี๋ยวนี้!
+                LayoutRebuilder.ForceRebuildLayoutImmediate(textRect);
+
+                // สั่งถุง (Content) ขยายเดี๋ยวนี้!
+                if (textRect.parent != null)
+                {
+                    LayoutRebuilder.ForceRebuildLayoutImmediate(textRect.parent.GetComponent<RectTransform>());
+                }
+            }
+        }
+        Canvas.ForceUpdateCanvases();
     }
 
     void OpenSelectionPanel()
@@ -194,6 +233,10 @@ public class DualNPC : MonoBehaviour
         {
             if (InventoryUI.instance.inventoryPanel != null)
                 InventoryUI.instance.inventoryPanel.SetActive(true);
+
+            // สั่งปิดหน้าต่างคราฟต์กันบัง
+            if (InventoryUI.instance.craftingPanel != null)
+                InventoryUI.instance.craftingPanel.SetActive(false);
         }
     }
 
