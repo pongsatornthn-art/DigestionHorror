@@ -15,7 +15,6 @@ GameObject:
   - component: {fileID: 3448393394155363883}
   - component: {fileID: 6554232919313908619}
   - component: {fileID: 3778910816714079678}
-  - component: {fileID: 6177693665727518250}
   m_Layer: 6
   m_Name: The Mob
   m_TagString: Enemy
@@ -224,25 +223,3 @@ MonoBehaviour:
     m_Bits: 128
   viewDistance: 10
   fovAngle: 140
---- !u!95 &6177693665727518250
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5583169332059026541}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 187d5fbf5608f4644bc75a3b546651e0, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0

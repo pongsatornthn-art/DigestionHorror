@@ -15,7 +15,6 @@ GameObject:
   - component: {fileID: 8782323999040169244}
   - component: {fileID: 6622130089230156701}
   - component: {fileID: 8738170315518224427}
-  - component: {fileID: -8614703779653660177}
   m_Layer: 6
   m_Name: The Kid
   m_TagString: Enemy
@@ -231,25 +230,3 @@ MonoBehaviour:
   rockPrefab: {fileID: 5436024405636801921, guid: 5521cd9951bbc914f958808b0c78d887, type: 3}
   throwForce: 10
   throwCooldown: 2
---- !u!95 &-8614703779653660177
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1189653419538841577}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: b7a28c4a282c7b14f8e8d36f8cd06de5, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
