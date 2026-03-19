@@ -5,7 +5,6 @@ public class SaveStatue : MonoBehaviour
     [Header("การตั้งค่าจุดเซฟ")]
     public float interactDistance = 2.5f;
 
-    // ❌ ไม่ต้องลาก savePanel มาใส่ตรงนี้แล้ว เพราะเราจะดึงจาก GameManager แทน
     private Transform player;
     private bool isNearStatue = false;
 
@@ -26,6 +25,9 @@ public class SaveStatue : MonoBehaviour
     {
         if (player == null || GameManager.instance == null) return;
 
+        // ถ้าระบบเกมหยุดอยู่ (Pause) ไม่ต้องคำนวณระยะทางซ้ำ จะได้ไม่เกิดบั๊ก
+        if (Time.timeScale == 0f && !GameManager.instance.savePanel.activeSelf) return;
+
         float distance = Vector2.Distance(transform.position, player.position);
 
         if (distance <= interactDistance)
@@ -41,12 +43,7 @@ public class SaveStatue : MonoBehaviour
         else
         {
             isNearStatue = false;
-
-            // ถ้าเดินห่างออกมาจากรูปปั้น ให้ปิดหน้าต่างอัตโนมัติ
-            if (GameManager.instance.savePanel.activeSelf)
-            {
-                GameManager.instance.ResumeGame();
-            }
+            // ⭐ ลบคำสั่งสั่งปิดหน้าจออัตโนมัติออกไปแล้วครับ! หมดปัญหาบั๊กหน้าต่างกระพริบแน่นอน
         }
     }
 
@@ -62,13 +59,13 @@ public class SaveStatue : MonoBehaviour
             if (ShopUI.instance != null && ShopUI.instance.shopPanel != null)
                 ShopUI.instance.shopPanel.SetActive(false);
 
-            // 2. สั่ง GameManager ให้หยุดเวลาเกม และเปิดหน้าต่างเซฟ!
+            // 2. สั่ง GameManager ให้หยุดเวลาเกม และเปิดหน้าต่างเซฟ
             GameManager.instance.PauseGame();
             GameManager.instance.ShowSaveMenu();
         }
         else
         {
-            // 3. ปิดหน้าเซฟ และให้เวลาในเกมเดินต่อ
+            // 3. ถ้าหน้าต่างเซฟเปิดอยู่ แล้วกด E อีกรอบ ให้ปิดและเดินต่อ
             GameManager.instance.ResumeGame();
         }
     }
