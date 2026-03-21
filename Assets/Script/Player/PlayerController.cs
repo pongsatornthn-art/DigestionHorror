@@ -3,12 +3,12 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using TMPro;
+using System.Collections; // ⭐ อย่าลืมอันนี้สำหรับใช้งาน Coroutine
 
 public class PlayerController : MonoBehaviour
 {
     public static PlayerController instance;
 
-    // ⭐ [เพิ่มจากเพื่อน] เรียกใช้ PlayerStatus
     private PlayerStatus status;
 
     [Header("References")]
@@ -45,6 +45,21 @@ public class PlayerController : MonoBehaviour
     public float runStaminaCost = 15f;
     private bool isRunning;
 
+    // ==========================================
+    // ⭐ [ระบบใหม่] Dash System
+    // ==========================================
+    [Header("Dash Settings")]
+    public float dashSpeed = 15f;          // ความเร็วตอนพุ่ง
+    public float dashDuration = 0.2f;      // ระยะเวลาพุ่ง
+    public float dashCooldown = 1f;        // คูลดาวน์ก่อนพุ่งรอบต่อไป
+    public float dashStaminaCost = 20f;    // สตามิน่าที่ใช้ต่อการแดช
+    public float iFrameDuration = 0.4f;    // ระยะเวลาเป็นอมตะ (หลบดาเมจ)
+    public AudioClip dashSound;            // เสียงตอนแดช
+
+    [HideInInspector] public bool isDashing = false;
+    [HideInInspector] public bool isInvulnerable = false; // เอาไว้ให้มอนสเตอร์เช็คว่าฟันเข้าไหม
+    private bool canDash = true;
+
     [Header("Movement")]
     public float walkSpeed = 5f;
     public float runSpeed = 8f;
@@ -52,20 +67,16 @@ public class PlayerController : MonoBehaviour
     private Vector2 movement;
     private Vector2 mousePos;
 
-    // ⭐ [เพิ่ม] ระบบเสียงเดิน
     [Header("Footstep Sounds")]
     public AudioClip[] footstepSounds;
     public float walkStepInterval = 0.5f;
     public float runStepInterval = 0.3f;
     private float stepTimer = 0f;
 
-    // ==========================================
-    // ⭐ [เพิ่มใหม่] ระบบผลักและดึง (Push & Pull)
-    // ==========================================
     [Header("Push & Pull System")]
-    public Transform grabPoint;      // จุดที่ยื่นมือไปจับ (สร้าง Empty GameObject หน้าตัวละคร)
-    public float grabRange = 0.5f;   // ระยะการจับ
-    public LayerMask draggableLayer; // เลเยอร์ของสิ่งของที่จับได้
+    public Transform grabPoint;
+    public float grabRange = 0.5f;
+    public LayerMask draggableLayer;
 
     private DraggableObject currentGrabbedObj;
     private FixedJoint2D grabJoint;
@@ -126,9 +137,12 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
+        if (isCrafting || isDashing) return; // ⭐ ปิดการควบคุมตอนคราฟต์และแดช
+
+        if ((InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
         {
             movement = Vector2.zero;
+            UpdateAnimationParams();
             if (currentGrabbedObj != null) ReleaseObject();
             return;
         }
@@ -136,10 +150,21 @@ public class PlayerController : MonoBehaviour
         if (status != null && status.isRooted)
         {
             movement = Vector2.zero;
+            UpdateAnimationParams();
             return;
         }
 
         HandleInput();
+
+        // ⭐ คำสั่งกด Dash
+        if (Input.GetKeyDown(KeyCode.Space) && canDash)
+        {
+            if (currentStamina >= dashStaminaCost)
+            {
+                StartCoroutine(DashRoutine());
+            }
+        }
+
         UpdateUI();
         HandleCombatInput();
         HandleGrabInput();
@@ -149,22 +174,62 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (isKnockbacked || isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
+        // ⭐ หลบฟิสิกส์ให้ Dash ทำงาน
+        if (isDashing || isKnockbacked || isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
 
         rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
 
-        // คำนวณองศาจากเมาส์
         Vector2 lookDir = mousePos - rb.position;
         float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
 
         if (currentActiveHolder != null)
             currentActiveHolder.transform.rotation = Quaternion.Euler(0, 0, angle);
 
-        // หมุนท่อนบนตามเมาส์
         if (bodyTransform != null) bodyTransform.rotation = Quaternion.Euler(0, 0, angle);
 
-        // ⭐ หมุนขา (ท่อนล่าง) ตามเมาส์ด้วย องศาเดียวกันเป๊ะ!
-        if (legsTransform != null) legsTransform.rotation = Quaternion.Euler(0, 0, angle);
+        // ⭐ บังคับให้ขาหมุนหันตามเมาส์ (ทิศเดียวกับตัว) ตลอดเวลา
+        if (legsTransform != null)
+        {
+            legsTransform.rotation = Quaternion.Euler(0, 0, angle);
+        }
+    }
+
+    // ==========================================
+    // ⭐ [เพิ่มใหม่] Coroutine สำหรับการ Dash
+    // ==========================================
+    private IEnumerator DashRoutine()
+    {
+        canDash = false;
+        isDashing = true;
+        isInvulnerable = true;
+
+        currentStamina -= dashStaminaCost;
+        UpdateUI();
+
+        if (audioSource != null && dashSound != null) audioSource.PlayOneShot(dashSound);
+
+        if (bodyAnim != null) bodyAnim.SetTrigger("Dash");
+        if (legAnim != null) legAnim.SetTrigger("Dash");
+
+        // ถ้าเดินอยู่ให้พุ่งไปทางที่เดิน ถ้ายืนนิ่งให้พุ่งไปหาเมาส์
+        Vector2 dashDir = movement.magnitude > 0.1f ? movement.normalized : (mousePos - rb.position).normalized;
+        rb.linearVelocity = dashDir * dashSpeed;
+
+        yield return new WaitForSeconds(dashDuration);
+
+        isDashing = false;
+        rb.linearVelocity = Vector2.zero;
+
+        float remainingIFrame = Mathf.Max(0, iFrameDuration - dashDuration);
+        if (remainingIFrame > 0)
+        {
+            yield return new WaitForSeconds(remainingIFrame);
+        }
+
+        isInvulnerable = false;
+
+        yield return new WaitForSeconds(dashCooldown);
+        canDash = true;
     }
 
     // ==========================================
@@ -210,7 +275,7 @@ public class PlayerController : MonoBehaviour
     }
 
     // ==========================================
-    // ฟังก์ชันอื่นๆ คงเดิมทั้งหมด
+    // ฟังก์ชันอื่นๆ
     // ==========================================
 
     void HandleFootsteps()
@@ -245,10 +310,16 @@ public class PlayerController : MonoBehaviour
         if (isKnockbacked) return;
 
         StopAllCoroutines();
+
+        // ⭐ คืนค่าสถานะให้ผู้เล่นขยับได้ใหม่ เผื่อโดนตบกลางอากาศตอนกำลังแดช
+        isDashing = false;
+        canDash = true;
+        isInvulnerable = false;
+
         StartCoroutine(KnockbackRoutine(force));
     }
 
-    private System.Collections.IEnumerator KnockbackRoutine(Vector2 force)
+    private IEnumerator KnockbackRoutine(Vector2 force)
     {
         isKnockbacked = true;
         rb.linearVelocity = Vector2.zero;
@@ -262,12 +333,13 @@ public class PlayerController : MonoBehaviour
 
     public void PlayerTakeDamage(int dmg)
     {
+        // ⭐ เช็คว่ากำลังเป็นอมตะตอนพุ่งอยู่ไหม ถ้าใช่ ให้ข้ามดาเมจไปเลย!
+        if (isInvulnerable) return;
+
         currentHealth = Mathf.Max(0, currentHealth - dmg);
         UpdateUI();
         if (currentHealth <= 0) Die();
     }
-
-    public void PlayerDie() { }
 
     void Die()
     {
@@ -275,9 +347,9 @@ public class PlayerController : MonoBehaviour
 
         if (currentGrabbedObj != null) ReleaseObject();
 
-        if (playerDeathBoxPrefab != null && Inventory.Instance != null)
+        if (playerDeathBoxPrefab != null && Inventory.instance != null)
         {
-            List<InventoryItem> droppedItems = Inventory.Instance.DropAllItemsExcept("Knife");
+            List<InventoryItem> droppedItems = Inventory.instance.DropAllItemsExcept("Knife");
 
             if (droppedItems.Count > 0)
             {
@@ -319,6 +391,13 @@ public class PlayerController : MonoBehaviour
         {
             transform.position = respawnPoint.position;
         }
+
+        // ⭐ รีเซ็ตสถานะ ป้องกันการบั๊กเดินไม่ได้ตอนเกิดใหม่
+        StopAllCoroutines();
+        isDashing = false;
+        canDash = true;
+        isInvulnerable = false;
+
         this.enabled = true;
         isKnockbacked = false;
     }
@@ -495,6 +574,8 @@ public class PlayerController : MonoBehaviour
 
         if (DigestionSystem.instance != null) DigestionSystem.instance.DecreaseDigestion(currentWeapon.digestionReduceAmount);
         if (Inventory.instance != null) Inventory.instance.RemoveItem(currentWeapon);
+
+        EquipWeapon(null);
     }
 
     void UseTotem()
@@ -503,18 +584,33 @@ public class PlayerController : MonoBehaviour
 
         if (DigestionSystem.instance != null) DigestionSystem.instance.ApplyTotemBuff(currentWeapon.digestionSlowMultiplier, currentWeapon.totemEffectDuration);
         if (Inventory.instance != null) Inventory.instance.RemoveItem(currentWeapon);
+
+        EquipWeapon(null);
     }
 
     public void SetCraftingState(bool state)
     {
         isCrafting = state;
 
-        if (bodyAnim != null) bodyAnim.SetBool("IsCrafting", state);
-        if (legAnim != null) legAnim.SetBool("IsCrafting", state);
-
-        if (currentActiveHolder != null)
+        if (state)
         {
-            currentActiveHolder.SetActive(!state);
+            if (currentActiveHolder != null) currentActiveHolder.SetActive(false);
+            if (bodyTransform != null) bodyTransform.gameObject.SetActive(true);
+
+            if (bodyAnim != null) bodyAnim.SetBool("IsCrafting", true);
+            if (legAnim != null) legAnim.SetBool("IsCrafting", true);
+        }
+        else
+        {
+            if (bodyAnim != null) bodyAnim.SetBool("IsCrafting", false);
+            if (legAnim != null) legAnim.SetBool("IsCrafting", false);
+
+            bool hasWeapon = (currentWeapon != null && currentWeapon.itemType == ItemType.Weapon);
+            if (hasWeapon && currentActiveHolder != null)
+            {
+                if (bodyTransform != null) bodyTransform.gameObject.SetActive(false);
+                currentActiveHolder.SetActive(true);
+            }
         }
     }
 }
