@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
-using TMPro; // ⭐ เพิ่มเข้ามาเพื่อใช้ TextMeshPro
 
 public class DigestionSystem : MonoBehaviour
 {
@@ -10,120 +8,117 @@ public class DigestionSystem : MonoBehaviour
     public float maxDigestion = 100f;
     public float currentDigestion = 0f;
 
-    [Header("The Watching Hour Settings")]
-    public bool isWatchingHour = false;
-    public float watchingHourRate = 2f;
+    [HideInInspector] public bool isWatchingHour = false;
 
-    [Header("UI")]
-    public Slider digestionSlider;
+    // ==========================================
+    // ⭐ ภาพรอยเลือด 4 ระดับ (ชื่อตรงกับออบเจกต์ใน Unity เป๊ะๆ)
+    // ==========================================
+    [Header("Blood Screen Stages")]
+    public GameObject blood25;  // สำหรับ 10% - 25% (ลากออบเจกต์ '25' มาใส่)
+    public GameObject blood50;  // สำหรับ 25% - 50% (ลากออบเจกต์ '50' มาใส่)
+    public GameObject blood75;  // สำหรับ 50% - 75% (ลากออบเจกต์ '75' มาใส่)
+    public GameObject blood100; // สำหรับ 75% - 100% (ลากออบเจกต์ '100' มาใส่)
 
-    // ตัวแปรสำหรับคุมความเร็วการย่อยอาหาร
+    // --- ระบบคำนวณ Totem ---
     private float currentDigestionMultiplier = 1f;
-
-    // ==========================================
-    // ⭐ ส่วนที่เพิ่มใหม่: Totem Timer & UI
-    // ==========================================
-    [Header("Totem Buff UI")]
-    public GameObject totemUIContainer; // กรอบ UI หลักของโทเทม (เอาไว้สั่ง เปิด/ปิด)
-    public TextMeshProUGUI totemTimeText; // ตัวหนังสือบอกเวลาถอยหลัง
-    public Slider totemTimeSlider; // (ตัวเลือกเสริม: หลอดเวลา ลดลงเรื่อยๆ ใส่หรือไม่ใส่ก็ได้)
-
-    private bool isTotemActive = false;
     private float totemTimer = 0f;
-    private float totemMaxDuration = 0f;
+    [HideInInspector] public bool isTotemActive = false;
 
-    void Awake() => instance = this;
+    void Awake()
+    {
+        instance = this;
+    }
 
     void Start()
     {
-        // เริ่มเกมมา ให้ซ่อน UI โทเทมไว้ก่อน
-        if (totemUIContainer != null) totemUIContainer.SetActive(false);
+        UpdateBloodScreen(); // อัปเดตภาพตั้งแต่เริ่มเกม
     }
 
     void Update()
     {
-        if (isWatchingHour)
-        {
-            IncreaseDigestion(watchingHourRate * currentDigestionMultiplier * Time.deltaTime);
-        }
-
-        // ⭐ จัดการนับเวลาถอยหลัง Totem และอัปเดต UI ทุกๆ เฟรม
+        // จัดการเวลานับถอยหลังของโทเทม
         if (isTotemActive)
         {
-            totemTimer -= Time.deltaTime; // เวลาน้อยลงเรื่อยๆ
-
-            // อัปเดตตัวเลข (Mathf.CeilToInt จะปัดเศษขึ้น จะได้ไม่มีทศนิยมยาวๆ)
-            if (totemTimeText != null)
-            {
-                totemTimeText.text = Mathf.CeilToInt(totemTimer).ToString() + "s";
-            }
-
-            // อัปเดตหลอดเวลา (ถ้าคุณอยากทำเป็นหลอดค่อยๆ ลด)
-            if (totemTimeSlider != null)
-            {
-                totemTimeSlider.value = totemTimer / totemMaxDuration;
-            }
-
-            // เช็คว่าเวลาหมดหรือยัง
+            totemTimer -= Time.deltaTime;
             if (totemTimer <= 0)
             {
                 isTotemActive = false;
-                currentDigestionMultiplier = 1f; // กลับมาเพิ่มความเร็วปกติ
-
-                if (totemUIContainer != null) totemUIContainer.SetActive(false); // ซ่อน UI
-                Debug.Log("หมดฤทธิ์โทเทมแล้ว! UI โทเทมหายไป");
+                currentDigestionMultiplier = 1f;
             }
         }
     }
 
     public void IncreaseDigestion(float amount)
     {
-        currentDigestion += amount;
+        currentDigestion += (amount * currentDigestionMultiplier);
         currentDigestion = Mathf.Clamp(currentDigestion, 0, maxDigestion);
-        UpdateUI();
+        UpdateBloodScreen(); // โดนดาเมจปุ๊บ สั่งเช็คภาพเลือดปั๊บ
     }
 
     public void DecreaseDigestion(float amount)
     {
         currentDigestion -= amount;
         currentDigestion = Mathf.Clamp(currentDigestion, 0, maxDigestion);
-        UpdateUI();
+        UpdateBloodScreen(); // ฮีลปุ๊บ สั่งเช็คภาพเลือดปั๊บ
     }
 
-    void UpdateUI()
-    {
-        if (digestionSlider != null)
-        {
-            digestionSlider.value = currentDigestion / maxDigestion;
-        }
-    }
-
-    public int GetSpawnBonus()
-    {
-        float ratio = currentDigestion / maxDigestion;
-
-        if (ratio >= 1.0f) return 7;
-        if (ratio >= 0.75f) return 4;
-        if (ratio >= 0.5f) return 2;
-
-        return 0;
-    }
-
-    // ==========================================
-    // ⭐ ฟังก์ชันรับคำสั่งปักโทเทม
-    // ==========================================
     public void ApplyTotemBuff(float multiplier, float duration)
     {
         currentDigestionMultiplier = multiplier;
-        totemMaxDuration = duration;
         totemTimer = duration;
         isTotemActive = true;
+    }
 
-        // สั่งเปิด UI โทเทมโชว์ขึ้นมาบนหน้าจอ
-        if (totemUIContainer != null) totemUIContainer.SetActive(true);
+    // ==========================================
+    // ⭐ ฟังก์ชันเปิด-ปิดภาพ (อ้างอิงตามรูปวาดเป๊ะๆ 100%)
+    // ==========================================
+    private void UpdateBloodScreen()
+    {
+        // แปลงค่าหลอดเลือดให้เป็นเปอร์เซ็นต์ (0 - 100)
+        float percent = (currentDigestion / maxDigestion) * 100f;
 
-        // บังคับอัปเดตตัวเลขทันทีในวินาทีแรกที่กดใช้
-        if (totemTimeText != null) totemTimeText.text = duration.ToString() + "s";
-        if (totemTimeSlider != null) totemTimeSlider.value = 1f;
+        // 1. สั่งปิดทุกรูปก่อนกันภาพทับซ้อนกัน
+        if (blood25 != null) blood25.SetActive(false);
+        if (blood50 != null) blood50.SetActive(false);
+        if (blood75 != null) blood75.SetActive(false);
+        if (blood100 != null) blood100.SetActive(false);
+
+        // 2. เช็คเงื่อนไขตามรูปสมุดจดเป๊ะๆ!
+        if (percent >= 75f && percent <= 100f)
+        {
+            // Digestion ระดับ 75% - 100%
+            if (blood100 != null) blood100.SetActive(true);
+        }
+        else if (percent >= 50f && percent < 75f)
+        {
+            // Digestion ระดับ 50% - 75%
+            if (blood75 != null) blood75.SetActive(true);
+        }
+        else if (percent >= 25f && percent < 50f)
+        {
+            // Digestion ระดับ 25% - 50%
+            if (blood50 != null) blood50.SetActive(true);
+        }
+        else if (percent >= 10f && percent < 25f)
+        {
+            // Digestion ระดับ 10% - 25%
+            if (blood25 != null) blood25.SetActive(true);
+        }
+        // ต่ำกว่า 10% คือหน้าจอใสสะอาดปกติครับ
+    }
+
+    // ==========================================
+    // ส่วนส่งออกข้อมูล (เผื่อระบบอื่นอยากรู้)
+    // ==========================================
+    public float GetDigestionRatio() => currentDigestion / maxDigestion;
+    public float GetTotemTimeLeft() => totemTimer;
+
+    public int GetSpawnBonus()
+    {
+        float ratio = GetDigestionRatio();
+        if (ratio >= 1.0f) return 7;
+        if (ratio >= 0.75f) return 4;
+        if (ratio >= 0.5f) return 2;
+        return 0;
     }
 }
