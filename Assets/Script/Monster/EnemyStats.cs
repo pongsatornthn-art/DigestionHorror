@@ -1,43 +1,43 @@
 ﻿using UnityEngine;
-using System.Collections; // ⭐ จำเป็นต้องเพิ่มบรรทัดนี้เพื่อใช้ IEnumerator (การจับเวลา)
+using System.Collections;
 
 public class EnemyStats : MonoBehaviour
 {
     public int hp = 100;
     public int damageToPlayer = 10;
 
-    [Header("Drop System")]
+    [Header("Drop System (ไอเทม)")]
     public GameObject lootBoxPrefab;
     public float boxDestroyTime = 10f;
 
     // ==========================================
-    // ⭐ ส่วนที่เพิ่มใหม่: ระบบ Hit Flash Effect (ตัวขาว)
+    // ⭐ ส่วนที่เพิ่มใหม่: ระบบดรอปเงิน (Orbs)
     // ==========================================
-    [Header("Visual Feedback (ตอนโดนตี)")]
-    public Color flashColor = Color.white; // สีที่จะให้กระพริบ (ค่าเริ่มต้นคือขาว)
-    public float flashDuration = 0.1f;    // ระยะเวลาที่ตัวเป็นสีขาว (วินาที)
+    [Header("Drop Money (เงิน Orbs)")]
+    public int minMoneyDrop = 5;  // สุ่มดรอปขั้นต่ำ
+    public int maxMoneyDrop = 20; // สุ่มดรอปสูงสุด
 
-    private SpriteRenderer spriteRenderer;  // ตัวเก็บคอมโพเนนต์แสดงภาพ
-    private Color originalColor;           // ตัวเก็บสีดั้งเดิมของศัตรู
-    private Coroutine flashCoroutine;       // ตัวคุม Coroutine ไม่ให้ตีกัน
+    [Header("Visual Feedback (ตอนโดนตี)")]
+    public Color flashColor = Color.white;
+    public float flashDuration = 0.1f;
+
+    private SpriteRenderer spriteRenderer;
+    private Color originalColor;
+    private Coroutine flashCoroutine;
 
     private Rigidbody2D rb;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-
-        // ⭐ ดึงคอมโพเนนต์ SpriteRenderer มาเก็บไว้ตอนเริ่มเกม
         spriteRenderer = GetComponent<SpriteRenderer>();
 
-        // ถ้าเจอ SpriteRenderer ให้เก็บสีดั้งเดิมไว้
         if (spriteRenderer != null)
         {
             originalColor = spriteRenderer.color;
         }
         else
         {
-            // ปริ้นเตือนเผื่อคุณลืมแปะ SpriteRenderer ไว้ที่ตัวมอนสเตอร์
             Debug.LogError(name + " ไม่มี SpriteRenderer แปะอยู่! ระบบตัวขาวจะทำงานไม่ได้");
         }
     }
@@ -47,7 +47,6 @@ public class EnemyStats : MonoBehaviour
         hp -= damage;
         Debug.Log(name + " เลือดเหลือ " + hp);
 
-        // ⭐ สั่งให้ตัวกระพริบเป็นสีขาว!
         StartFlashEffect();
 
         if (rb != null && knockbackForce > 0)
@@ -58,45 +57,29 @@ public class EnemyStats : MonoBehaviour
         if (hp <= 0) Die();
     }
 
-    // ==========================================
-    // ⭐ ส่วนฟังก์ชันคุมการกระพริบ
-    // ==========================================
-
-    // ฟังก์ชันหลักที่ถูกเรียกตอนโดนตี
     void StartFlashEffect()
     {
-        if (spriteRenderer == null) return; // ถ้าไม่มีภาพ ไม่ต้องทำอะไร
+        if (spriteRenderer == null) return;
 
-        // ถ้ามันกำลังกระพริบอยู่ ให้หยุดอันเก่าก่อน แล้วเริ่มนับ 1 ใหม่
         if (flashCoroutine != null)
         {
             StopCoroutine(flashCoroutine);
         }
 
-        // เริ่มต้นการนับเวลาเปลี่ยนสี (Coroutine)
         flashCoroutine = StartCoroutine(FlashRoutine());
     }
 
-    // Coroutine: ฟังก์ชันพิเศษที่สามารถ "หยุดรอ" เวลาได้
     IEnumerator FlashRoutine()
     {
-        // 1. เปลี่ยนสี Sprite เป็นสีขาว (flashColor)
         spriteRenderer.color = flashColor;
-
-        // 2. หยุดรอเวลาตามที่กำหนดไว้ (flashDuration)
         yield return new WaitForSeconds(flashDuration);
-
-        // 3. เปลี่ยนสีกลับเป็นสีดั้งเดิม
         spriteRenderer.color = originalColor;
-
-        // เคลียร์ค่าตัวคุม Coroutine
         flashCoroutine = null;
     }
 
-    // ==========================================
-
     void Die()
     {
+        // 1. ดรอปกล่องไอเทม (ถ้ามี)
         if (lootBoxPrefab != null)
         {
             GameObject droppedBox = Instantiate(lootBoxPrefab, transform.position, Quaternion.identity);
@@ -104,7 +87,21 @@ public class EnemyStats : MonoBehaviour
             Destroy(droppedBox, boxDestroyTime);
         }
 
-        Destroy(gameObject);
+        // 2. ⭐ ดรอปเงิน (Orbs) เข้าตัวผู้เล่นโดยตรง
+        if (PlayerController.instance != null)
+        {
+            // สุ่มจำนวนเงิน (+1 ข้างหลังเพราะสูตรสุ่มมันจะไม่นับเลขตัวสุดท้ายครับ)
+            int droppedMoney = Random.Range(minMoneyDrop, maxMoneyDrop + 1);
+
+            if (droppedMoney > 0)
+            {
+                PlayerController.instance.currentMoney += droppedMoney; // เพิ่มเงิน
+                PlayerController.instance.UpdateUI(); // สั่งให้หน้าจออัปเดตตัวเลขทันที
+                Debug.Log($"✨ {name} ตาย! ได้รับเงิน (Orbs): {droppedMoney} | เงินรวม: {PlayerController.instance.currentMoney}");
+            }
+        }
+
+        Destroy(gameObject); // ทำลายศัตรูทิ้ง
     }
 
     void OnCollisionEnter2D(Collision2D collision)
