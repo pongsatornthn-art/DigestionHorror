@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: monster hair
   icon: {fileID: -3674168313692527970, guid: eb0f3cc7c0f80a54d9567a851100521e, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: -6183731833095693581, guid: c5b447e6dba09ef44b11c345b648c3c0, type: 3}
   isStackable: 1
   maxStack: 64
   itemType: 0

@@ -1,52 +1,55 @@
 ﻿using UnityEngine;
 
-[RequireComponent(typeof(Collider2D))] // บังคับว่าต้องมี Collider 2D เสมอ
+[RequireComponent(typeof(Collider2D))]
 public class ItemPickup : MonoBehaviour
 {
     [Header("ข้อมูลไอเท็ม")]
     public ItemData item;
     public float pickupRange = 3f;
 
-    [Header("ตั้งค่ารูปภาพ (Visuals)")]
+    [Header("ตั้งค่ารูปภาพและ UI (Visuals)")]
     public GameObject normalObject;
     public GameObject hoverObject;
+    public GameObject promptUI;
+
+    // ⭐ ส่วนที่เพิ่มใหม่: ระยะเยื้องจากปลายเมาส์ (ปรับได้ใน Unity)
+    public Vector3 promptOffset = new Vector3(0.5f, 0.5f, 0f);
 
     private Transform player;
     private bool isMouseOver = false;
-    private Collider2D col; // ตัวแปรเก็บกรอบฟิสิกส์ของไอเทม
+    private Collider2D col;
 
     void Start()
     {
-        // หาตัว Player
         GameObject p = GameObject.FindGameObjectWithTag("Player");
         if (p != null) player = p.transform;
 
-        // ดึงคอมโพเนนต์ Collider มาเตรียมไว้ใช้งาน
         col = GetComponent<Collider2D>();
-
-        // เริ่มเกม: เปิดตัวปกติ, ปิดตัวตอนชี้
         UpdateVisuals(false);
     }
 
     void Update()
     {
-        // 1. แปลงตำแหน่งเมาส์บนหน้าจอ ให้เป็นตำแหน่งในโลกของเกม
-        Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        // หาตำแหน่งเมาส์ในโลกของเกม
+        Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mouseWorldPos.z = 0f; // ล็อกแกน Z ไว้กันภาพจม
 
-        // 2. เช็คว่าเมาส์จิ้มโดนกรอบฟิสิกส์ของไอเทมชิ้นนี้อยู่ไหม (แม่นยำและไม่จำศีลแน่นอน)
         bool isHoveringNow = col.OverlapPoint(mouseWorldPos);
 
-        // 3. ถ้าสถานะการชี้เปลี่ยนไป (เพิ่งชี้ หรือ เพิ่งเอาเมาส์ออก) ให้สลับรูปภาพ
         if (isHoveringNow != isMouseOver)
         {
             isMouseOver = isHoveringNow;
             UpdateVisuals(isMouseOver);
         }
 
-        // 4. ระบบกดปุ่มเก็บของ
+        // ⭐ ส่วนที่เพิ่มใหม่: บังคับให้ปุ่ม E วิ่งตามเมาส์ตลอดเวลาที่ชี้อยู่
+        if (isMouseOver && promptUI != null)
+        {
+            promptUI.transform.position = mouseWorldPos + promptOffset;
+        }
+
         if (isMouseOver && player != null)
         {
-            // เช็คระยะห่างระหว่างตัวละครกับไอเทม
             if (Vector2.Distance(transform.position, player.position) <= pickupRange)
             {
                 if (Input.GetKeyDown(KeyCode.E))
@@ -58,17 +61,17 @@ public class ItemPickup : MonoBehaviour
                     }
                     else
                     {
-                        Debug.LogWarning("❌ เก็บไม่ได้! กระเป๋าเต็ม หรือระบบ Inventory มีปัญหา");
+                        Debug.LogWarning("❌ เก็บไม่ได้! กระเป๋าเต็ม");
                     }
                 }
             }
         }
     }
 
-    // ฟังก์ชันช่วยสลับรูปภาพ
     void UpdateVisuals(bool isHovering)
     {
         if (normalObject != null) normalObject.SetActive(!isHovering);
         if (hoverObject != null) hoverObject.SetActive(isHovering);
+        if (promptUI != null) promptUI.SetActive(isHovering);
     }
 }

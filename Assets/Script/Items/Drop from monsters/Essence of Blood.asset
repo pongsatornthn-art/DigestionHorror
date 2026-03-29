@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: Essence of Blood
   icon: {fileID: 380465943337878605, guid: 1d96d927d18c3d743816f1df551003bf, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: -6177973621710181376, guid: afc5daa19ff3b1c459c2ae65fa77c553, type: 3}
   isStackable: 1
   maxStack: 64
   itemType: 0

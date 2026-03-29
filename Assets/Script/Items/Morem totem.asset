@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: Morem totem
   icon: {fileID: 5152026198456197640, guid: ef4ab3080d50ecc4da64658c94355e98, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: -3106623231673769117, guid: 041612bd245f4c34eb59ba83e5ed79fa, type: 3}
   isStackable: 1
   maxStack: 1
   itemType: 2

@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: ax handle
   icon: {fileID: -58218078911942680, guid: 504e966e3d1870b4390b3506e1036e09, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: 3277049366734016457, guid: e81af179a886af8449b7d5a823e0dfd8, type: 3}
   isStackable: 1
   maxStack: 5
   itemType: 0

@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: ax blade
   icon: {fileID: -3432792937102018733, guid: 305c3d914f6bb63438a3871f3c7f608a, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: 3277049366734016457, guid: e81af179a886af8449b7d5a823e0dfd8, type: 3}
   isStackable: 1
   maxStack: 5
   itemType: 0

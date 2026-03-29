@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: Blueprint for making an axe handle.
   icon: {fileID: 1873279084398011518, guid: 89ec3b44a188ca240bdd7e8b6885c732, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: -3082816153414725783, guid: 4f8db64061d9f844ca86c8419dc613a8, type: 3}
   isStackable: 1
   maxStack: 5
   itemType: 0

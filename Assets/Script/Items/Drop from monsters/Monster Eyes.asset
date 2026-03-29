@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: Monster Eyes
   icon: {fileID: -3105115006017013170, guid: 7e3f3bb405320a84cb4351c72a34cfb9, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: 7546877510773125504, guid: 2468465552f5dfb4a85f40a7dbbb8b39, type: 3}
   isStackable: 1
   maxStack: 64
   itemType: 0

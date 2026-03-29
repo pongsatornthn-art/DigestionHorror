@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: wine
   icon: {fileID: -8638005434913105384, guid: f77f670b246ac5d41aef50a5cb2ea540, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: -949845539178587187, guid: 26472247c1466cf48840f27967b460ab, type: 3}
   isStackable: 1
   maxStack: 1
   itemType: 0

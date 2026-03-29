@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: NailStick
   icon: {fileID: -2487646273995597588, guid: 9bcc61b1c5a504d49a98d3176b707195, type: 3}
   description: 
-  descriptionImage: {fileID: -2487646273995597588, guid: 9bcc61b1c5a504d49a98d3176b707195, type: 3}
+  descriptionImage: {fileID: 2044345542293817030, guid: 816b3e20453b72e4b866628074c5c445, type: 3}
   isStackable: 1
   maxStack: 1
   itemType: 1

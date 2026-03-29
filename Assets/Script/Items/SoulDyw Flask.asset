@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: SoulDyw Flask
   icon: {fileID: 6801951371363190623, guid: dbe31fac8eb547140a934ade6b016982, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: -7590409062997361985, guid: 715ad9dfb433e634090ee19bfd47704c, type: 3}
   isStackable: 1
   maxStack: 5
   itemType: 3

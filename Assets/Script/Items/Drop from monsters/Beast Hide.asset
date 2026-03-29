@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: Beast Hide
   icon: {fileID: -6880781840295014019, guid: 5ec91cbdb329f0143983652ad35eadfc, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: 8929184495288110637, guid: ca87003a186a04744b07e6688768e3ee, type: 3}
   isStackable: 1
   maxStack: 64
   itemType: 0

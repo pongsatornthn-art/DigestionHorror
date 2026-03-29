@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: Rust remover
   icon: {fileID: -3075368193214949120, guid: a4b615c9397b38743877b206c517e50c, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: 4569451519858400169, guid: 131869cb19e703e41b8ca3586d9647cf, type: 3}
   isStackable: 1
   maxStack: 5
   itemType: 0

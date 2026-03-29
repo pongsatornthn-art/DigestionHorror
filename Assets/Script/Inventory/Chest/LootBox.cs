@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Collider2D))]
 public class LootBox : MonoBehaviour
 {
     [Header("Settings")]
@@ -12,10 +13,21 @@ public class LootBox : MonoBehaviour
 
     [Header("Interaction (ระยะการเปิดกล่อง)")]
     public float interactRange = 2f;
-    private Transform player;
 
+    [Header("Visual & UI (ภาพและปุ่ม)")]
+    public GameObject normalObject;
+    public GameObject hoverObject;
+    public GameObject promptUI;
+
+    // ⭐ ส่วนที่เพิ่มใหม่: ระยะเยื้องจากปลายเมาส์ (ปรับได้ใน Unity)
+    public Vector3 promptOffset = new Vector3(0.5f, 0.5f, 0f);
+
+    private Transform player;
     private bool isPlayerDeathBox = false;
     private bool hasStartedDestroyTimer = false;
+
+    private bool isMouseOver = false;
+    private Collider2D col;
 
     public void SetBoxContents(List<InventoryItem> droppedItems)
     {
@@ -26,37 +38,50 @@ public class LootBox : MonoBehaviour
     void Start()
     {
         FindPlayer();
+        col = GetComponent<Collider2D>();
 
         if (!isPlayerDeathBox && lootTable != null)
         {
             boxContents = lootTable.GenerateLoot();
         }
+
+        UpdateVisuals(false);
     }
 
     void FindPlayer()
     {
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
-        {
-            player = playerObj.transform;
-        }
+        if (playerObj != null) player = playerObj.transform;
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.E))
+        Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mouseWorldPos.z = 0f; // ล็อกแกน Z
+
+        bool isHoveringNow = col.OverlapPoint(mouseWorldPos);
+
+        if (isHoveringNow != isMouseOver)
         {
-            if (player == null)
-            {
-                FindPlayer();
-                if (player == null) return;
-            }
+            isMouseOver = isHoveringNow;
+            UpdateVisuals(isMouseOver);
+        }
+
+        // ⭐ ส่วนที่เพิ่มใหม่: บังคับให้ปุ่ม E วิ่งตามเมาส์ตลอดเวลาที่ชี้อยู่
+        if (isMouseOver && promptUI != null)
+        {
+            promptUI.transform.position = mouseWorldPos + promptOffset;
+        }
+
+        if (isMouseOver && Input.GetKeyDown(KeyCode.E))
+        {
+            if (player == null) FindPlayer();
+            if (player == null) return;
 
             float distance = Vector2.Distance(transform.position, player.position);
 
             if (distance <= interactRange)
             {
-                // ตรวจสอบก่อนว่าเปิดอยู่ไหม
                 bool isChestOpen = ChestUI.instance != null && ChestUI.instance.chestPanel.activeSelf;
                 if (!isChestOpen)
                 {
@@ -66,64 +91,40 @@ public class LootBox : MonoBehaviour
         }
     }
 
-    // ⭐ เพิ่มฟังก์ชันนี้: งัด UI ขึ้นมาแม้จะโดนปิดซ่อนอยู่!
+    void UpdateVisuals(bool isHovering)
+    {
+        if (normalObject != null) normalObject.SetActive(!isHovering);
+        if (hoverObject != null) hoverObject.SetActive(isHovering);
+        if (promptUI != null) promptUI.SetActive(isHovering);
+    }
+
     void WakeUpUI()
     {
         if (ChestUI.instance == null)
         {
-            // ค้นหาแบบทะลุมิติ (หาเจอแม้ GameObject จะโดนติ๊กปิดไว้)
             ChestUI[] foundChests = Resources.FindObjectsOfTypeAll<ChestUI>();
-            if (foundChests.Length > 0)
-            {
-                ChestUI.instance = foundChests[0];
-                ChestUI.instance.gameObject.SetActive(true); // บังคับติ๊กถูกเปิดตัวแม่
-            }
+            if (foundChests.Length > 0) { ChestUI.instance = foundChests[0]; ChestUI.instance.gameObject.SetActive(true); }
         }
-
         if (InventoryUI.instance == null)
         {
             InventoryUI[] foundInvs = Resources.FindObjectsOfTypeAll<InventoryUI>();
-            if (foundInvs.Length > 0)
-            {
-                InventoryUI.instance = foundInvs[0];
-                InventoryUI.instance.gameObject.SetActive(true); // บังคับติ๊กถูกเปิดตัวแม่
-            }
+            if (foundInvs.Length > 0) { InventoryUI.instance = foundInvs[0]; InventoryUI.instance.gameObject.SetActive(true); }
         }
     }
 
     void OpenChest()
     {
-        // 1. เรียกใช้ระบบปลุก UI ก่อนเลย
         WakeUpUI();
 
-        // 2. สั่งเปิดหน้าต่างกล่อง
-        if (ChestUI.instance != null)
-        {
-            ChestUI.instance.ShowChest(this);
-        }
-        else
-        {
-            Debug.LogError("❌ หา ChestUI ไม่เจอในโปรเจกต์เลย!");
-            return;
-        }
+        if (ChestUI.instance != null) ChestUI.instance.ShowChest(this);
+        else return;
 
-        // 3. สั่งบังคับเปิดหน้าต่างกระเป๋า และ "บังคับปิด" หน้าต่างคราฟต์!
         if (InventoryUI.instance != null)
         {
-            // เปิดกระเป๋า
-            if (InventoryUI.instance.inventoryPanel != null)
-            {
-                InventoryUI.instance.inventoryPanel.SetActive(true);
-            }
-
-            // ⭐ บังคับปิดหน้าคราฟต์เด็ดขาด! (เพิ่ม SetActive เป็น false)
-            if (InventoryUI.instance.craftingPanel != null)
-            {
-                InventoryUI.instance.craftingPanel.SetActive(false);
-            }
+            if (InventoryUI.instance.inventoryPanel != null) InventoryUI.instance.inventoryPanel.SetActive(true);
+            if (InventoryUI.instance.craftingPanel != null) InventoryUI.instance.craftingPanel.SetActive(false);
         }
 
-        // 4. เริ่มนับเวลาทำลายกล่อง
         if ((isPlayerDeathBox || destroyAfterOpen) && !hasStartedDestroyTimer)
         {
             hasStartedDestroyTimer = true;
@@ -136,7 +137,6 @@ public class LootBox : MonoBehaviour
         if (ChestUI.instance != null && ChestUI.instance.chestPanel != null && ChestUI.instance.chestPanel.activeSelf)
         {
             ChestUI.instance.CloseChest();
-
             if (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel != null && InventoryUI.instance.inventoryPanel.activeSelf)
             {
                 InventoryUI.instance.ToggleInventory();
@@ -152,9 +152,6 @@ public class LootBox : MonoBehaviour
 
     public void RemoveItem(InventoryItem itemToRemove)
     {
-        if (boxContents.Contains(itemToRemove))
-        {
-            boxContents.Remove(itemToRemove);
-        }
+        if (boxContents.Contains(itemToRemove)) boxContents.Remove(itemToRemove);
     }
 }

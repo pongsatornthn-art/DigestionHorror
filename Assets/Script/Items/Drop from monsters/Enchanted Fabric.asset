@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: Enchanted Fabric
   icon: {fileID: 8643716788613721753, guid: 2f048c5d3b919d34883a308f4e549351, type: 3}
   description: 
-  descriptionImage: {fileID: 0}
+  descriptionImage: {fileID: 3367739030427539473, guid: 4a38cdbc2d464f04eb1d0526804fe657, type: 3}
   isStackable: 1
   maxStack: 64
   itemType: 0

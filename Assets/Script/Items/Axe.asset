@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: Axe
   icon: {fileID: -8864645360043674332, guid: 0fef8b29c975179499ebeebdf1088a05, type: 3}
   description: 
-  descriptionImage: {fileID: -8864645360043674332, guid: 0fef8b29c975179499ebeebdf1088a05, type: 3}
+  descriptionImage: {fileID: 6777011887890729856, guid: 5ad51417646f5cd499fa87bf5486e9d9, type: 3}
   isStackable: 1
   maxStack: 1
   itemType: 1
