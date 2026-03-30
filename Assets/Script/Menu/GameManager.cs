@@ -2,8 +2,12 @@
 using UnityEngine.UI;
 using UnityEngine.Audio;
 using System.IO;
-using TMPro; // ⭐ เพิ่มไลบรารีนี้สำหรับจัดการข้อความ TextMeshPro
+using TMPro;
+using System.Collections.Generic; // ⭐ ห้ามลืม! จำเป็นสำหรับระบบเก็บข้อมูลแบบ List
 
+// ==========================================
+// 📦 1. ข้อมูลที่จะถูกเซฟลงเครื่อง (เพิ่มกระเป๋าและเควส)
+// ==========================================
 [System.Serializable]
 public class SaveData
 {
@@ -11,6 +15,14 @@ public class SaveData
     public int health;
     public float stamina;
     public int money;
+
+    // ⭐ ส่วนเก็บข้อมูลกระเป๋า
+    public List<string> inventoryItemNames = new List<string>();
+    public List<int> inventoryItemAmounts = new List<int>();
+
+    // ⭐ ส่วนเก็บข้อมูลเควส
+    public int currentQuestIndex;
+    public bool isCurrentQuestAccepted;
 }
 
 public class GameManager : MonoBehaviour
@@ -32,12 +44,12 @@ public class GameManager : MonoBehaviour
     public int maxSavesAllowed = 3;
     public int currentSaveCount = 0;
 
-    [Header("Save UI Texts (ข้อความสถานะเซฟ)")] // ⭐ เพิ่มส่วนนี้สำหรับลาก Text มาใส่
-    public TMP_Text[] slotTexts; // ช่องใส่ Text ของ Slot 1, 2, 3
-    public TMP_Text quotaText;   // ช่องใส่ Text บอกโควต้าการเซฟที่เหลือ
+    [Header("Save UI Texts (ข้อความสถานะเซฟ)")]
+    public TMP_Text[] slotTexts;
+    public TMP_Text quotaText;
 
     private bool isPaused = false;
-    private bool isAudioInitialized = false; // ⭐ ระบบป้องกันเสียงบั๊ก
+    private bool isAudioInitialized = false;
 
     void Awake()
     {
@@ -47,23 +59,19 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // โหลดตั้งค่าเสียงที่เคยเซฟไว้
         if (musicSlider != null) musicSlider.value = PlayerPrefs.GetFloat("SavedMusicVol", 0.75f);
         if (sfxSlider != null) sfxSlider.value = PlayerPrefs.GetFloat("SavedSFXVol", 0.75f);
 
-        // ปิดหน้าต่างทั้งหมดตอนเริ่มเกม
         if (pauseMainPanel) pauseMainPanel.SetActive(false);
         if (savePanel) savePanel.SetActive(false);
         if (loadPanel) loadPanel.SetActive(false);
         if (settingsPanel) settingsPanel.SetActive(false);
 
-        // ⭐ อัปเดตข้อความเซฟตั้งแต่เริ่มเกม
         UpdateSaveUI();
     }
 
     void Update()
     {
-        // ⭐ [ระบบแก้บั๊กเสียง] ตื้อ Mixer จนกว่าจะยอมตื่น!
         if (!isAudioInitialized && mainMixer != null)
         {
             float savedMusic = PlayerPrefs.GetFloat("SavedMusicVol", 0.75f);
@@ -86,7 +94,6 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // ระบบกดปุ่ม Esc เปิดหน้าต่างของคุณ
         if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
         {
             if (isPaused) ResumeGame();
@@ -97,24 +104,15 @@ public class GameManager : MonoBehaviour
     // ==========================================
     // 🛑 ระบบหยุดเกมและสลับหน้าต่าง UI
     // ==========================================
-    public void PauseGame()
-    {
-        isPaused = true;
-        Time.timeScale = 0f;
-        ShowPauseMainMenu();
-    }
-
+    public void PauseGame() { isPaused = true; Time.timeScale = 0f; ShowPauseMainMenu(); }
     public void ResumeGame()
     {
-        isPaused = false;
-        Time.timeScale = 1f;
-
+        isPaused = false; Time.timeScale = 1f;
         if (pauseMainPanel) pauseMainPanel.SetActive(false);
         if (savePanel) savePanel.SetActive(false);
         if (loadPanel) loadPanel.SetActive(false);
         if (settingsPanel) settingsPanel.SetActive(false);
     }
-
     public void ShowPauseMainMenu()
     {
         if (pauseMainPanel) pauseMainPanel.SetActive(true);
@@ -122,25 +120,22 @@ public class GameManager : MonoBehaviour
         if (loadPanel) loadPanel.SetActive(false);
         if (settingsPanel) settingsPanel.SetActive(false);
     }
-
     public void ShowSaveMenu()
     {
         if (pauseMainPanel) pauseMainPanel.SetActive(false);
         if (savePanel) savePanel.SetActive(true);
         if (loadPanel) loadPanel.SetActive(false);
         if (settingsPanel) settingsPanel.SetActive(false);
-        UpdateSaveUI(); // ⭐ อัปเดตข้อความตอนเปิดหน้าต่าง
+        UpdateSaveUI();
     }
-
     public void ShowLoadMenu()
     {
         if (pauseMainPanel) pauseMainPanel.SetActive(false);
         if (savePanel) savePanel.SetActive(false);
         if (loadPanel) loadPanel.SetActive(true);
         if (settingsPanel) settingsPanel.SetActive(false);
-        UpdateSaveUI(); // ⭐ อัปเดตข้อความตอนเปิดหน้าต่าง
+        UpdateSaveUI();
     }
-
     public void ShowSettingsMenu()
     {
         if (pauseMainPanel) pauseMainPanel.SetActive(false);
@@ -161,7 +156,6 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.SetFloat("SavedMusicVol", sliderValue);
         }
     }
-
     public void SetSFXVolume(float sliderValue)
     {
         if (mainMixer != null)
@@ -173,28 +167,25 @@ public class GameManager : MonoBehaviour
     }
 
     // ==========================================
-    // 💾 ระบบเซฟและโหลด 
+    // 💾 ระบบเซฟและโหลด (สมบูรณ์แบบ: ตัว+กระเป๋า+เควส)
     // ==========================================
     public void SaveGame(int slotNumber)
     {
-        // ⭐ 1. ด่านตรวจที่ 1: เช็คก่อนว่าช่องนี้มีเซฟทับอยู่แล้วหรือเปล่า? 
-        // (กันผู้เล่นมือลั่นกดซ้ำ แล้วเสียโควต้าฟรี)
         if (PlayerPrefs.HasKey("SaveSlot_" + slotNumber))
         {
             Debug.Log("⚠️ ช่องเซฟที่ " + slotNumber + " มีข้อมูลอยู่แล้ว! ต้องกดลบทิ้งก่อนถึงจะเซฟใหม่ได้");
-            return; // เด้งออกเลย ไม่ทำการเซฟ และไม่หักโควต้า
+            return;
         }
 
-        // ⭐ 2. ด่านตรวจที่ 2: เช็คโควต้าว่าเซฟครบ 3 ครั้งหรือยัง?
         if (currentSaveCount >= maxSavesAllowed)
         {
             Debug.Log("❌ เซฟไม่ได้แล้ว! โควต้าครบ 3 ครั้งแล้ว");
             return;
         }
 
-        // ---- ถ้าผ่านด่านตรวจมาได้ ก็เริ่มทำการเซฟปกติ ----
         SaveData data = new SaveData();
 
+        // 1. เซฟสเตตัสผู้เล่น
         if (PlayerController.instance != null)
         {
             data.playerPosX = PlayerController.instance.transform.position.x;
@@ -204,18 +195,48 @@ public class GameManager : MonoBehaviour
             data.money = PlayerController.instance.currentMoney;
         }
 
+        // 2. ⭐ เซฟกระเป๋าไอเทม
+        if (Inventory.instance != null)
+        {
+            foreach (var slot in Inventory.instance.items)
+            {
+                if (slot != null && slot.itemData != null)
+                {
+                    data.inventoryItemNames.Add(slot.itemData.name);
+                    data.inventoryItemAmounts.Add(slot.amount);
+                }
+                else
+                {
+                    data.inventoryItemNames.Add(""); // ถ้าช่องว่าง เซฟค่าว่าง
+                    data.inventoryItemAmounts.Add(0);
+                }
+            }
+        }
+
+        // 3. ⭐ เซฟสถานะเควส (หา DualNPC ทั้งหมดเผื่อมีหลายตัว)
+        DualNPC[] allNPCs = FindObjectsByType<DualNPC>(FindObjectsSortMode.None);
+        if (allNPCs.Length > 0)
+        {
+            // (สมมติว่าตอนนี้มี NPC เนื้อเรื่องหลักแค่ตัวเดียวก่อน)
+            DualNPC mainNPC = allNPCs[0];
+            data.currentQuestIndex = mainNPC.currentQuestIndex;
+            if (mainNPC.currentQuestIndex < mainNPC.quests.Count)
+            {
+                data.isCurrentQuestAccepted = mainNPC.quests[mainNPC.currentQuestIndex].hasAccepted;
+            }
+        }
+
         string json = JsonUtility.ToJson(data);
         PlayerPrefs.SetString("SaveSlot_" + slotNumber, json);
 
-        // หักโควต้าเซฟ
         currentSaveCount++;
         PlayerPrefs.SetInt("SaveCount", currentSaveCount);
         PlayerPrefs.Save();
 
-        Debug.Log($"✅ เซฟเกมลงช่อง {slotNumber} สำเร็จ!");
+        Debug.Log($"✅ เซฟเกมลงช่อง {slotNumber} สำเร็จ! (รวมกระเป๋าและเควส)");
 
-        UpdateSaveUI(); // อัปเดตข้อความทันทีหลังเซฟเสร็จ
-        ShowLoadMenu(); // (ออปชันเสริม) เซฟเสร็จแล้วเด้งไปหน้าโหลด
+        UpdateSaveUI();
+        ShowLoadMenu();
     }
 
     public void LoadGame(int slotNumber)
@@ -225,6 +246,7 @@ public class GameManager : MonoBehaviour
             string json = PlayerPrefs.GetString("SaveSlot_" + slotNumber);
             SaveData data = JsonUtility.FromJson<SaveData>(json);
 
+            // 1. โหลดสเตตัสผู้เล่น
             if (PlayerController.instance != null)
             {
                 PlayerController.instance.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
@@ -237,7 +259,66 @@ public class GameManager : MonoBehaviour
                 PlayerController.instance.UpdateUI();
             }
 
-            Debug.Log($"📂 โหลดเกมจากช่อง {slotNumber} สำเร็จ!");
+            // 2. ⭐ โหลดกระเป๋าไอเทม
+            if (Inventory.instance != null)
+            {
+                Inventory.instance.items.Clear();
+                Inventory.instance.Unequip(); // เอามือลงก่อนกันบั๊กของค้าง
+
+                for (int i = 0; i < data.inventoryItemNames.Count; i++)
+                {
+                    if (!string.IsNullOrEmpty(data.inventoryItemNames[i]))
+                    {
+                        // ⚠ กฎเหล็ก: ไฟล์ไอเทมทั้งหมดต้องอยู่ในโฟลเดอร์ Assets/Resources/Items/ เท่านั้น!
+                        ItemData loadedItem = Resources.Load<ItemData>("Items/" + data.inventoryItemNames[i]);
+
+                        if (loadedItem != null)
+                            Inventory.instance.items.Add(new InventoryItem(loadedItem, data.inventoryItemAmounts[i]));
+                        else
+                            Inventory.instance.items.Add(null);
+                    }
+                    else
+                    {
+                        Inventory.instance.items.Add(null);
+                    }
+                }
+
+                // เติมช่องว่างให้เต็มกระเป๋า 30 ช่อง
+                while (Inventory.instance.items.Count < Inventory.instance.space)
+                    Inventory.instance.items.Add(null);
+
+                if (Inventory.instance.onItemChangedCallback != null)
+                    Inventory.instance.onItemChangedCallback.Invoke();
+            }
+
+            // 3. ⭐ โหลดสถานะเควส
+            DualNPC[] allNPCs = FindObjectsByType<DualNPC>(FindObjectsSortMode.None);
+            if (allNPCs.Length > 0)
+            {
+                DualNPC mainNPC = allNPCs[0];
+                mainNPC.currentQuestIndex = data.currentQuestIndex;
+
+                // รีเซ็ตเควสเก่าทั้งหมดก่อน
+                foreach (var q in mainNPC.quests) { q.hasAccepted = false; q.isCompleted = false; q.hasGreetedThisQuest = false; }
+
+                // ติ๊กผ่านเควสที่เคยทำเสร็จแล้ว
+                for (int i = 0; i < data.currentQuestIndex; i++)
+                {
+                    mainNPC.quests[i].isCompleted = true;
+                    mainNPC.quests[i].hasAccepted = true;
+                    mainNPC.quests[i].hasGreetedThisQuest = true;
+                }
+
+                // โหลดสถานะเควสปัจจุบัน (ว่ากดรับหรือยัง)
+                if (data.currentQuestIndex < mainNPC.quests.Count)
+                {
+                    mainNPC.quests[data.currentQuestIndex].hasAccepted = data.isCurrentQuestAccepted;
+                    if (data.isCurrentQuestAccepted)
+                        mainNPC.quests[data.currentQuestIndex].hasGreetedThisQuest = true;
+                }
+            }
+
+            Debug.Log($"📂 โหลดเกมช่อง {slotNumber} สำเร็จ! (ดึงกระเป๋าและเควสมาแล้ว)");
             ResumeGame();
         }
         else
@@ -251,33 +332,29 @@ public class GameManager : MonoBehaviour
     // ==========================================
     public void UpdateSaveUI()
     {
-        // 1. อัปเดตข้อความของแต่ละช่องเซฟ
         for (int i = 0; i < slotTexts.Length; i++)
         {
-            int slotNumber = i + 1; // อ้างอิงช่อง 1, 2, 3
+            int slotNumber = i + 1;
 
-            // ป้องกัน Error กรณีลืมใส่ Text ลงใน Inspector
             if (slotTexts[i] == null) continue;
 
             if (PlayerPrefs.HasKey("SaveSlot_" + slotNumber))
             {
                 slotTexts[i].text = "ช่องเซฟ " + slotNumber + " : มีข้อมูล 💾";
-                slotTexts[i].color = new Color(0.2f, 0.8f, 0.2f); // สีเขียว
+                slotTexts[i].color = new Color(0.2f, 0.8f, 0.2f);
             }
             else
             {
                 slotTexts[i].text = "ช่องเซฟ " + slotNumber + " : ว่างเปล่า";
-                slotTexts[i].color = Color.white; // สีขาว
+                slotTexts[i].color = Color.white;
             }
         }
 
-        // 2. อัปเดตข้อความบอกโควต้า
         if (quotaText != null)
         {
             int savesLeft = maxSavesAllowed - currentSaveCount;
             quotaText.text = "สิทธิ์เซฟเกมเหลือ: " + savesLeft + " / " + maxSavesAllowed + " ครั้ง";
 
-            // ถ้าโควต้าหมด ให้ตัวหนังสือเป็นสีแดงเตือนผู้เล่น
             if (savesLeft <= 0) quotaText.color = Color.red;
             else quotaText.color = Color.white;
         }
@@ -287,21 +364,17 @@ public class GameManager : MonoBehaviour
     {
         string key = "SaveSlot_" + slotNumber;
 
-        // เช็คว่ามีเซฟในช่องนี้จริงๆ ถึงจะยอมให้ลบ
         if (PlayerPrefs.HasKey(key))
         {
             PlayerPrefs.DeleteKey(key);
 
-            // คืนโควต้าเซฟให้ 1 ครั้ง
             currentSaveCount--;
-            if (currentSaveCount < 0) currentSaveCount = 0; // กันบั๊กติดลบ
+            if (currentSaveCount < 0) currentSaveCount = 0;
 
             PlayerPrefs.SetInt("SaveCount", currentSaveCount);
             PlayerPrefs.Save();
 
             Debug.Log("🗑️ ลบข้อมูลช่อง " + slotNumber + " และคืนโควต้าให้แล้ว!");
-
-            // สั่งอัปเดตหน้าจอทันที
             UpdateSaveUI();
         }
     }
