@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: wine
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: wine
-  icon: {fileID: -8638005434913105384, guid: f77f670b246ac5d41aef50a5cb2ea540, type: 3}
+  icon: {fileID: -3075368193214949120, guid: a4b615c9397b38743877b206c517e50c, type: 3}
   description: 
   descriptionImage: {fileID: -949845539178587187, guid: 26472247c1466cf48840f27967b460ab, type: 3}
   isStackable: 1

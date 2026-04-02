@@ -30,20 +30,20 @@ public class TotemUI : MonoBehaviour
             timeText.gameObject.SetActive(isActive);
         }
 
-        // ⭐ ส่วนที่แก้ใหม่: คำนวณเป็นวินาทีล้วนๆ
+       
         if (isActive)
         {
             float timeLeft = DigestionSystem.instance.GetTotemTimeLeft();
 
-            // ใช้ CeilToInt ปัดเศษทศนิยมขึ้น (สมมติเหลือ 0.5 วิ จะยังโชว์เลข 1 อยู่)
+            
             int totalSeconds = Mathf.CeilToInt(timeLeft);
 
             if (timeText != null)
             {
-                // โชว์เลขวินาที และผมเติมตัว "s" ต่อท้ายให้ดูเป็นหน่วยวินาทีครับ (เช่น 300s)
+             
                 timeText.text = totalSeconds.ToString() + "s"; 
                 
-                // 💡 (ถ้าไม่อยากได้ตัว s ต่อท้าย ให้เปลี่ยนเป็น: timeText.text = totalSeconds.ToString(); ได้เลยครับ)
+           
             }
         }
     }

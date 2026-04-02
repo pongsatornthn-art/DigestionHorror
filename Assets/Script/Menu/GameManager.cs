@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.Audio;
 using System.IO;
 using TMPro;
-using System.Collections.Generic; // ⭐ ห้ามลืม! จำเป็นสำหรับระบบเก็บข้อมูลแบบ List
+using System.Collections.Generic;
 
 // ==========================================
 // 📦 1. ข้อมูลที่จะถูกเซฟลงเครื่อง (เพิ่มกระเป๋าและเควส)
@@ -269,7 +269,6 @@ public class GameManager : MonoBehaviour
                 {
                     if (!string.IsNullOrEmpty(data.inventoryItemNames[i]))
                     {
-                        // ⚠ กฎเหล็ก: ไฟล์ไอเทมทั้งหมดต้องอยู่ในโฟลเดอร์ Assets/Resources/Items/ เท่านั้น!
                         ItemData loadedItem = Resources.Load<ItemData>("Items/" + data.inventoryItemNames[i]);
 
                         if (loadedItem != null)
