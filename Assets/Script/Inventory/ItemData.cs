@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
-using UnityEngine.Scripting; // ⭐ เพิ่ม namespace นี้
+using UnityEngine.Scripting;
 
 public enum ItemType { General, Weapon, Totem, Consumable }
 
-[Preserve] // ⭐ สั่งให้ Unity "ห้ามลบ" คลาสนี้ทิ้งตอน Build เด็ดขาด!
+[Preserve]
 [CreateAssetMenu(fileName = "New Item", menuName = "Inventory/Item")]
 public class ItemData : ScriptableObject
 {
@@ -51,4 +51,12 @@ public class ItemData : ScriptableObject
     [Header("Totem Stats (สำหรับ โทเทม)")]
     public float digestionSlowMultiplier = 0.5f;
     public float totemEffectDuration = 60f;
+
+    // ==========================================
+    // ⭐ ส่วนที่เพิ่มใหม่: ระบบสถานะพิเศษ (ตีเลือดไหล)
+    // ==========================================
+    [Header("Special Effects (สถานะพิเศษ)")]
+    public bool causesBleeding = false; // ติ๊กถูกถ้าเป็นไม้ตะปู
+    public float bleedDuration = 10f;   // ระยะเวลาเลือดไหล (10 วินาที)
+    public int bleedDamagePerSec = 2;   // ดาเมจที่ลดลงทุกๆ 1 วินาที
 }

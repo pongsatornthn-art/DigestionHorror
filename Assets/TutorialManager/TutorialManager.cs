@@ -5,8 +5,8 @@ using TMPro;
 public class TutorialStep
 {
     [TextArea]
-    public string instructionText; // ข้อความที่จะให้แสดง เช่น "กด J เพื่ออ่านเอกสาร"
-    public KeyCode keyToPress;     // ปุ่มที่ต้องกดให้ผ่าน เช่น KeyCode.J
+    public string instructionText;
+    public KeyCode keyToPress;
 }
 
 public class TutorialManager : MonoBehaviour
@@ -14,11 +14,15 @@ public class TutorialManager : MonoBehaviour
     public static TutorialManager instance;
 
     [Header("UI Settings")]
-    public GameObject tutorialPanel;   // กรอบ UI แจ้งเตือน
-    public TextMeshProUGUI tutorialText; // ตัวหนังสือบอกให้กด
+    public GameObject tutorialPanel;
+    public TextMeshProUGUI tutorialText;
 
     [Header("Tutorial Steps (ตั้งค่าลำดับการสอน)")]
     public TutorialStep[] steps;
+
+    [Header("🛠️ Debug (โหมดเทสเกม)")]
+    [Tooltip("ติ๊กถูกช่องนี้ ถ้าอยากให้หน้าต่างสอนเล่นเด้งขึ้นมา 'ทุกครั้ง' ที่กด Play")]
+    public bool forceShowTutorial = false; // ⭐ เพิ่มตัวแปรนี้เข้ามา
 
     private int currentStepIndex = 0;
     private bool isTutorialActive = false;
@@ -30,7 +34,15 @@ public class TutorialManager : MonoBehaviour
 
     void Start()
     {
-        // เช็คว่าเคยผ่านโหมดสอนเล่นมาหรือยัง (0 = ยังไม่เคย, 1 = เคยแล้ว)
+        // ⭐ เช็คว่าเปิดโหมดบังคับโชว์อยู่ไหม?
+        if (forceShowTutorial)
+        {
+            Debug.Log("🛠️ [Debug Mode] บังคับเปิดระบบสอนเล่น!");
+            StartTutorial();
+            return; // หยุดการทำงานตรงนี้เลย ไม่ต้องไปเช็ค PlayerPrefs
+        }
+
+        // ระบบปกติ: เช็คว่าเคยผ่านโหมดสอนเล่นมาหรือยัง (0 = ยังไม่เคย, 1 = เคยแล้ว)
         if (PlayerPrefs.GetInt("TutorialCompleted", 0) == 0)
         {
             StartTutorial();
@@ -57,7 +69,6 @@ public class TutorialManager : MonoBehaviour
     {
         if (currentStepIndex < steps.Length)
         {
-            // แสดงข้อความของสเต็ปปัจจุบัน
             if (tutorialText != null)
             {
                 tutorialText.text = steps[currentStepIndex].instructionText;
@@ -65,7 +76,6 @@ public class TutorialManager : MonoBehaviour
         }
         else
         {
-            // ถ้าทำครบทุกสเต็ปแล้ว ให้จบการสอน
             EndTutorial();
         }
     }
@@ -74,11 +84,10 @@ public class TutorialManager : MonoBehaviour
     {
         if (!isTutorialActive) return;
 
-        // เช็คว่าผู้เล่นกดปุ่มตรงกับที่สั่งไว้ในสเต็ปนี้หรือเปล่า
         if (Input.GetKeyDown(steps[currentStepIndex].keyToPress))
         {
-            currentStepIndex++; // เปลี่ยนไปสเต็ปถัดไป
-            ShowCurrentStep();  // อัปเดตข้อความบนจอ
+            currentStepIndex++;
+            ShowCurrentStep();
         }
     }
 
@@ -87,18 +96,22 @@ public class TutorialManager : MonoBehaviour
         isTutorialActive = false;
         if (tutorialPanel != null) tutorialPanel.SetActive(false);
 
-        // บันทึกลงเครื่องไว้ว่า "ผ่านการสอนเล่นแล้วนะ" รอบหน้าจะได้ไม่เด้งอีก
-        PlayerPrefs.SetInt("TutorialCompleted", 1);
-        PlayerPrefs.Save();
+        // บันทึกลงเครื่อง (จะบันทึกก็ต่อเมื่อไม่ได้เปิดโหมด Force Show)
+        if (!forceShowTutorial)
+        {
+            PlayerPrefs.SetInt("TutorialCompleted", 1);
+            PlayerPrefs.Save();
+        }
 
         Debug.Log("✅ จบโหมดสอนเล่น!");
     }
 
-    // ⭐ แถมฟังก์ชันสำหรับปุ่ม Reset ให้เผื่อเอาไว้ใช้เทสเกม
+    // ⭐ เพิ่ม ContextMenu ให้คลิกขวาที่สคริปต์เพื่อรีเซ็ตได้เลย
+    [ContextMenu("🔄 รีเซ็ตความจำโหมดสอนเล่น (Clear Save)")]
     public void ResetTutorial()
     {
         PlayerPrefs.SetInt("TutorialCompleted", 0);
         PlayerPrefs.Save();
-        Debug.Log("🔄 รีเซ็ตโหมดสอนเล่นแล้ว (เริ่มเกมรอบหน้าจะเด้งใหม่)");
+        Debug.Log("🔄 รีเซ็ตโหมดสอนเล่นแล้ว (ถ้าไม่ได้ติ๊ก Force Show เริ่มเกมรอบหน้าก็จะเด้งใหม่ครับ)");
     }
 }

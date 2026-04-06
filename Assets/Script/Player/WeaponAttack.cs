@@ -7,86 +7,93 @@ public class WeaponAttack : MonoBehaviour
     public LayerMask enemyLayer;
 
     [Header("Body Parts (ลาก GameObject มาใส่ตรงนี้)")]
-    public GameObject defaultBody; // เช่น Body_Pivot (ร่างปกติ)
+    public GameObject defaultBody; // ร่างปกติ
     public GameObject knifeBody;   // ร่างตอนถือมีด
-    // public GameObject axeBody;  // ร่างตอนถือขวาน (เอาไว้ใส่ทีหลัง)
+    public GameObject axeBody;     // ร่างตอนถือขวาน (ID 1)
+    public GameObject nailStickBody; // ร่างตอนถือไม้ตะปู (ID 2)
 
-    private ItemData currentItem; // เก็บของที่ถืออยู่ปัจจุบัน
+    private ItemData currentItem;
+
+    [HideInInspector] public int bonusDamage = 0; // ⭐ เก็บดาเมจพิเศษจากวงเวทย์
 
     void Update()
     {
-        // 1. ดึงข้อมูลจากกระเป๋ามาเช็คตลอดเวลา
         currentItem = Inventory.instance.currentEquippedItem;
-
-        // 2. เรียกฟังก์ชันจัดการเปลี่ยนร่าง
         UpdateBodyVisuals();
 
-        // 3. ถ้าคลิกซ้าย + ถือมีดอยู่ -> สั่งตี
         if (Input.GetMouseButtonDown(0) && IsHoldingWeapon())
         {
             PerformAttack();
         }
     }
 
-    // ฟังก์ชันเช็คว่าถืออาวุธอยู่ไหม (เขียนแยกออกมาจะได้ดูง่ายๆ)
     bool IsHoldingWeapon()
     {
         return currentItem != null && currentItem.itemType == ItemType.Weapon;
     }
 
-    // ฟังก์ชันเปลี่ยนร่าง (หัวใจสำคัญที่คุณต้องการ)
     void UpdateBodyVisuals()
     {
-        // --- กรณีที่ 1: ไม่ได้ถืออะไรเลย หรือ ถือของที่ไม่ใช่อาวุธ ---
         if (currentItem == null || currentItem.itemType != ItemType.Weapon)
         {
-            defaultBody.SetActive(true);  // เปิดร่างปกติ
-            knifeBody.SetActive(false);   // ปิดร่างมีด
+            defaultBody.SetActive(true);
+            knifeBody.SetActive(false);
+            if (axeBody) axeBody.SetActive(false);
+            if (nailStickBody) nailStickBody.SetActive(false);
             return;
         }
 
-        // --- กรณีที่ 2: ถืออาวุธ (เช็คตาม ID) ---
-        if (currentItem.itemType == ItemType.Weapon)
+        // ปิดทุกร่างก่อน
+        defaultBody.SetActive(false);
+        knifeBody.SetActive(false);
+        if (axeBody) axeBody.SetActive(false);
+        if (nailStickBody) nailStickBody.SetActive(false);
+
+        // เปิดเฉพาะร่างที่ถืออยู่
+        switch (currentItem.weaponID)
         {
-            switch (currentItem.weaponID)
-            {
-                case 0: // ID 0 = มีด
-                    defaultBody.SetActive(false); // ปิดร่างปกติ
-                    knifeBody.SetActive(true);    // เปิดร่างมีด
-                    break;
-
-                // case 1: // ID 1 = ขวาน (อนาคตค่อยมาเติม)
-                //     defaultBody.SetActive(false);
-                //     knifeBody.SetActive(false);
-                //     axeBody.SetActive(true);
-                //     break;
-
-                default: // กันพลาด ถ้า ID ไม่ตรงให้กลับไปร่างปกติ
-                    defaultBody.SetActive(true);
-                    knifeBody.SetActive(false);
-                    break;
-            }
+            case 0: knifeBody.SetActive(true); break;
+            case 1: if (axeBody) axeBody.SetActive(true); break;
+            case 2: if (nailStickBody) nailStickBody.SetActive(true); break;
+            default: defaultBody.SetActive(true); break;
         }
     }
 
     void PerformAttack()
     {
-        // ตรงนี้ใส่ Animator ของร่างมีด หรือร่างปัจจุบันที่เปิดอยู่
-        // เนื่องจากเราสลับ GameObject คุณอาจจะต้อง Getcomponent Animator จากตัวที่เปิดอยู่
-        Animator currentAnim = knifeBody.GetComponent<Animator>();
+        // สั่งเล่นแอนิเมชันตีตามร่างที่เปิดอยู่
+        Animator currentAnim = null;
+        if (knifeBody.activeSelf) currentAnim = knifeBody.GetComponent<Animator>();
+        else if (axeBody != null && axeBody.activeSelf) currentAnim = axeBody.GetComponent<Animator>();
+        else if (nailStickBody != null && nailStickBody.activeSelf) currentAnim = nailStickBody.GetComponent<Animator>();
 
         if (currentAnim != null)
         {
-            currentAnim.SetTrigger("Attack"); // สั่งเล่นท่าตีในร่างมีด
+            currentAnim.SetTrigger("Attack");
         }
 
-        // คำนวณ Damage
-        Debug.Log($"ฟันด้วยมีด! ความแรง {currentItem.damage}");
+        // ⭐ คำนวณดาเมจรวม (ดาเมจอาวุธ + บัฟวงเวทย์)
+        int finalDamage = currentItem.damage + bonusDamage;
+        Debug.Log($"ฟัน! ความแรงอาวุธ {currentItem.damage} + บัฟ {bonusDamage} = โดนไป {finalDamage}");
+
+        // โจมตีจริง
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, attackRange, enemyLayer);
         foreach (Collider2D enemy in hitEnemies)
         {
-            Debug.Log("โดน: " + enemy.name);
-            // Destroy(enemy.gameObject); 
+            EnemyStats stats = enemy.GetComponent<EnemyStats>();
+            if (stats != null)
+            {
+                Vector2 knockbackDir = (enemy.transform.position - transform.position).normalized;
+
+                // ⭐ ส่งดาเมจที่บวกบัฟแล้วไปให้มอนสเตอร์
+                stats.TakeDamage(finalDamage, currentItem.knockback, knockbackDir);
+
+                // เช็คว่าทำให้เลือดไหลไหม
+                if (currentItem.causesBleeding)
+                {
+                    stats.ApplyBleed(currentItem.bleedDuration, currentItem.bleedDamagePerSec);
+                }
+            }
         }
     }
 

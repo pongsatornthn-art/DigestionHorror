@@ -9,21 +9,21 @@ public class EnemyStats : MonoBehaviour
     [Header("Drop System (ไอเทม)")]
     public GameObject lootBoxPrefab;
     public float boxDestroyTime = 10f;
-
-    // ==========================================
-    // ⭐ ส่วนที่เพิ่มใหม่: ระบบดรอปเงิน (Orbs)
-    // ==========================================
-    [Header("Drop Money (เงิน Orbs)")]
-    public int minMoneyDrop = 5;  // สุ่มดรอปขั้นต่ำ
-    public int maxMoneyDrop = 20; // สุ่มดรอปสูงสุด
+    public int minMoneyDrop = 5;
+    public int maxMoneyDrop = 20;
 
     [Header("Visual Feedback (ตอนโดนตี)")]
     public Color flashColor = Color.white;
     public float flashDuration = 0.1f;
 
+    [Header("Bleeding System (ระบบเลือดไหล)")]
+    public Color bleedFlashColor = Color.red; // สีตอนกระพริบเลือดไหล
+    public GameObject bleedVisualEffect; // ⭐ ลาก GameObject ภาพเลือดมาใส่ช่องนี้!
+
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
     private Coroutine flashCoroutine;
+    private Coroutine bleedCoroutine;
 
     private Rigidbody2D rb;
 
@@ -36,16 +36,15 @@ public class EnemyStats : MonoBehaviour
         {
             originalColor = spriteRenderer.color;
         }
-        else
-        {
-            Debug.LogError(name + " ไม่มี SpriteRenderer แปะอยู่! ระบบตัวขาวจะทำงานไม่ได้");
-        }
+
+        // เริ่มเกมมา บังคับซ่อนภาพเลือดไว้ก่อน
+        if (bleedVisualEffect != null) bleedVisualEffect.SetActive(false);
     }
 
     public void TakeDamage(int damage, float knockbackForce, Vector2 knockbackDirection)
     {
         hp -= damage;
-        Debug.Log(name + " เลือดเหลือ " + hp);
+        Debug.Log(name + " โดนตี! เลือดเหลือ " + hp);
 
         StartFlashEffect();
 
@@ -57,15 +56,54 @@ public class EnemyStats : MonoBehaviour
         if (hp <= 0) Die();
     }
 
+    // ==========================================
+    // ⭐ ระบบเลือดไหล (Bleeding)
+    // ==========================================
+    public void ApplyBleed(float duration, int damagePerSec)
+    {
+        if (bleedCoroutine != null) StopCoroutine(bleedCoroutine);
+        bleedCoroutine = StartCoroutine(BleedRoutine(duration, damagePerSec));
+    }
+
+    IEnumerator BleedRoutine(float duration, int damagePerSec)
+    {
+        float elapsed = 0f;
+
+        // ⭐ เปิดภาพเอฟเฟกต์เลือดบนหัวมอนสเตอร์
+        if (bleedVisualEffect != null) bleedVisualEffect.SetActive(true);
+
+        while (elapsed < duration)
+        {
+            yield return new WaitForSeconds(1f);
+            elapsed += 1f;
+
+            hp -= damagePerSec;
+            Debug.Log($"🩸 {name} เลือดไหล! ลดไป {damagePerSec} (เหลือ {hp})");
+
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = bleedFlashColor;
+                yield return new WaitForSeconds(0.15f);
+                spriteRenderer.color = originalColor;
+            }
+
+            if (hp <= 0)
+            {
+                Die();
+                yield break;
+            }
+        }
+
+        // ⭐ เลือดหยุดไหลแล้ว ปิดภาพเอฟเฟกต์เลือด
+        if (bleedVisualEffect != null) bleedVisualEffect.SetActive(false);
+        bleedCoroutine = null;
+    }
+    // ==========================================
+
     void StartFlashEffect()
     {
         if (spriteRenderer == null) return;
-
-        if (flashCoroutine != null)
-        {
-            StopCoroutine(flashCoroutine);
-        }
-
+        if (flashCoroutine != null) StopCoroutine(flashCoroutine);
         flashCoroutine = StartCoroutine(FlashRoutine());
     }
 
@@ -79,29 +117,23 @@ public class EnemyStats : MonoBehaviour
 
     void Die()
     {
-        // 1. ดรอปกล่องไอเทม (ถ้ามี)
         if (lootBoxPrefab != null)
         {
             GameObject droppedBox = Instantiate(lootBoxPrefab, transform.position, Quaternion.identity);
-            Debug.Log(name + " ดรอปกล่องแล้ว!");
             Destroy(droppedBox, boxDestroyTime);
         }
 
-        // 2. ⭐ ดรอปเงิน (Orbs) เข้าตัวผู้เล่นโดยตรง
         if (PlayerController.instance != null)
         {
-            // สุ่มจำนวนเงิน (+1 ข้างหลังเพราะสูตรสุ่มมันจะไม่นับเลขตัวสุดท้ายครับ)
             int droppedMoney = Random.Range(minMoneyDrop, maxMoneyDrop + 1);
-
             if (droppedMoney > 0)
             {
-                PlayerController.instance.currentMoney += droppedMoney; // เพิ่มเงิน
-                PlayerController.instance.UpdateUI(); // สั่งให้หน้าจออัปเดตตัวเลขทันที
-                Debug.Log($"✨ {name} ตาย! ได้รับเงิน (Orbs): {droppedMoney} | เงินรวม: {PlayerController.instance.currentMoney}");
+                PlayerController.instance.currentMoney += droppedMoney;
+                PlayerController.instance.UpdateUI();
             }
         }
 
-        Destroy(gameObject); // ทำลายศัตรูทิ้ง
+        Destroy(gameObject);
     }
 
     void OnCollisionEnter2D(Collision2D collision)

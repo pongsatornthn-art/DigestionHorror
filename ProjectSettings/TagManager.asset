@@ -8,6 +8,7 @@ TagManager:
   - Wall
   - Flashlight
   - FlashlightLight
+  - MagicPuppet
   layers:
   - Default
   - TransparentFX

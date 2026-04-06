@@ -35,3 +35,6 @@ MonoBehaviour:
   digestionReduceAmount: 20
   digestionSlowMultiplier: 0.5
   totemEffectDuration: 60
+  causesBleeding: 1
+  bleedDuration: 10
+  bleedDamagePerSec: 2
