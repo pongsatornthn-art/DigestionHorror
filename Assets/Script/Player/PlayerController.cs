@@ -541,13 +541,24 @@ public class PlayerController : MonoBehaviour
         float zAngle = currentActiveHolder.transform.eulerAngles.z;
         Collider2D[] hitEnemies = Physics2D.OverlapBoxAll(attackPoint.position, attackBoxSize, zAngle, enemyLayers);
         float currentKnockback = (pendingDamage == currentWeapon.damage) ? currentWeapon.knockback : currentWeapon.heavyKnockback;
+
         foreach (Collider2D enemy in hitEnemies)
         {
             EnemyStats enemyStats = enemy.GetComponent<EnemyStats>();
             if (enemyStats != null)
             {
                 Vector2 knockbackDir = (enemy.transform.position - transform.position).normalized;
+
+                // 1. ทำดาเมจปกติ + กระเด็น
                 enemyStats.TakeDamage(pendingDamage, currentKnockback, knockbackDir);
+
+                // 2. ⭐ เช็คว่าอาวุธที่ถืออยู่ มีโหมดทำให้เลือดไหลไหม?
+                // (ถ้าตัวแปรใน ItemData ของคุณพงศธรชื่อต่างจากนี้ ให้แก้ให้ตรงนะครับ)
+                if (currentWeapon.causesBleeding)
+                {
+                    // ถ้ามี ก็สั่งให้มอนสเตอร์ติดสถานะ Bleed ไปด้วยเลย!
+                    enemyStats.ApplyBleed(currentWeapon.bleedDuration, currentWeapon.bleedDamagePerSec);
+                }
             }
         }
     }

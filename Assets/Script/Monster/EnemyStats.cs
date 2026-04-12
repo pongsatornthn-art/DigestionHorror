@@ -17,8 +17,13 @@ public class EnemyStats : MonoBehaviour
     public float flashDuration = 0.1f;
 
     [Header("Bleeding System (ระบบเลือดไหล)")]
-    public Color bleedFlashColor = Color.red; // สีตอนกระพริบเลือดไหล
-    public GameObject bleedVisualEffect; // ⭐ ลาก GameObject ภาพเลือดมาใส่ช่องนี้!
+    public Color bleedFlashColor = Color.red;
+    public GameObject bleedVisualEffect; // ลาก GameObject ภาพหยดเลือดมาใส่ช่องนี้
+
+    // ⭐ ส่วนที่เพิ่มเข้ามาใหม่สำหรับจัดตำแหน่งไอคอนเลือด
+    [Header("Bleed Icon Settings (ตั้งค่าไอคอน)")]
+    public Vector2 bleedIconOffset = new Vector2(0.5f, 0.5f); // ระยะห่างจากจุดศูนย์กลางมอนสเตอร์ (X, Y)
+    public float bleedIconScale = 1f; // ปรับขนาดไอคอนให้เล็ก/ใหญ่
 
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
@@ -37,8 +42,25 @@ public class EnemyStats : MonoBehaviour
             originalColor = spriteRenderer.color;
         }
 
-        // เริ่มเกมมา บังคับซ่อนภาพเลือดไว้ก่อน
-        if (bleedVisualEffect != null) bleedVisualEffect.SetActive(false);
+        // ⭐ โค้ดใหม่: สร้างโคลนภาพเลือดตอนมอนสเตอร์เกิด
+        if (bleedVisualEffect != null)
+        {
+            // 1. สร้างตัวโคลน (Clone) จากไฟล์ Prefab ภาพเลือด
+            GameObject bleedClone = Instantiate(bleedVisualEffect);
+
+            // 2. จับตัวโคลนมาเป็นลูกของมอนสเตอร์ตัวนี้
+            bleedClone.transform.SetParent(this.transform);
+
+            // 3. จัดตำแหน่งและขนาด
+            bleedClone.transform.localPosition = new Vector3(bleedIconOffset.x, bleedIconOffset.y, 0f);
+            bleedClone.transform.localScale = Vector3.one * bleedIconScale;
+
+            // 4. ซ่อนไว้ก่อนรอโดนตี
+            bleedClone.SetActive(false);
+
+            // 5. อัปเดตให้ตัวแปรไปจำ "ตัวโคลน" แทนไฟล์ต้นฉบับ
+            bleedVisualEffect = bleedClone;
+        }
     }
 
     public void TakeDamage(int damage, float knockbackForce, Vector2 knockbackDirection)
@@ -69,7 +91,7 @@ public class EnemyStats : MonoBehaviour
     {
         float elapsed = 0f;
 
-        // ⭐ เปิดภาพเอฟเฟกต์เลือดบนหัวมอนสเตอร์
+        // ⭐ เปิดภาพไอคอนเลือดข้างๆ มอนสเตอร์
         if (bleedVisualEffect != null) bleedVisualEffect.SetActive(true);
 
         while (elapsed < duration)
@@ -94,7 +116,7 @@ public class EnemyStats : MonoBehaviour
             }
         }
 
-        // ⭐ เลือดหยุดไหลแล้ว ปิดภาพเอฟเฟกต์เลือด
+        // ⭐ เลือดหยุดไหลแล้ว ปิดภาพไอคอนเลือด
         if (bleedVisualEffect != null) bleedVisualEffect.SetActive(false);
         bleedCoroutine = null;
     }

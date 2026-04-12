@@ -185,6 +185,14 @@ MonoBehaviour:
   damageToPlayer: 0
   lootBoxPrefab: {fileID: 7459246882786202960, guid: b67d781aabce5db4d87f73b13349347a, type: 3}
   boxDestroyTime: 10
+  minMoneyDrop: 5
+  maxMoneyDrop: 20
+  flashColor: {r: 1, g: 1, b: 1, a: 1}
+  flashDuration: 0.1
+  bleedFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  bleedVisualEffect: {fileID: 6654111603369895830, guid: 301a655bbdced5e4cbfb5c0d862c0d2c, type: 3}
+  bleedIconOffset: {x: 0.5, y: 0.5}
+  bleedIconScale: 1
 --- !u!114 &6622130089230156701
 MonoBehaviour:
   m_ObjectHideFlags: 0
