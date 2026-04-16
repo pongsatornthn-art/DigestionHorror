@@ -1,56 +1,128 @@
 ﻿using UnityEngine;
-using UnityEngine.SceneManagement; // ต้องใช้ตัวนี้สำหรับการเปลี่ยนหน้าซีน
+using UnityEngine.SceneManagement;
+using TMPro;
+using UnityEngine.Audio;
+using UnityEngine.UI;
 
 public class MainMenuManager : MonoBehaviour
 {
-    [Header("ตั้งค่าหน้าต่าง UI (ลาก Panel มาใส่)")]
-    public GameObject mainMenuPanel; // หน้าต่างเมนูหลักที่มีปุ่ม Start, Quit
-    public GameObject settingsPanel; // หน้าต่างตั้งค่า (เอาไว้ซ่อน/โชว์)
+    [Header("หน้าต่าง UI")]
+    public GameObject mainMenuPanel;
+    public GameObject loadPanel;
+    public GameObject settingsPanel;
 
-    [Header("ตั้งค่าการโหลดซีน")]
-    [Tooltip("พิมพ์ชื่อ Scene เกมของคุณให้เป๊ะๆ (ตัวพิมพ์เล็ก/ใหญ่ต้องตรงกัน)")]
-    public string gameSceneName = "GameScene";
+    [Header("การตั้งค่า Scene")]
+    // 👈 ตัด Tutorial ทิ้งไป เหลือแค่ฉากเกมหลักฉากเดียว
+    public string mainGameSceneName = "Main";
+
+    [Header("ระบบโหลดเซฟ UI")]
+    public TMP_Text[] slotTexts;
+
+    [Header("ระบบเสียง")]
+    public AudioMixer mainMixer;
+    public Slider musicSlider;
+    public Slider sfxSlider;
 
     void Start()
     {
-        // เริ่มเกมมา ให้โชว์หน้าเมนูหลัก และซ่อนหน้าตั้งค่าเอาไว้ก่อน
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
-        if (settingsPanel != null) settingsPanel.SetActive(false);
+        ShowMainMenu();
+        UpdateLoadUI();
+
+        if (musicSlider != null) musicSlider.value = PlayerPrefs.GetFloat("SavedMusicVol", 0.75f);
+        if (sfxSlider != null) sfxSlider.value = PlayerPrefs.GetFloat("SavedSFXVol", 0.75f);
     }
 
-    // ฟังก์ชันสำหรับปุ่ม "เริ่มเกม"
-    public void PlayGame()
+    // ==========================================
+    // 🚀 ระบบเริ่มเกมใหม่ / โหลดเกม
+    // ==========================================
+    public void NewGame()
     {
-        Debug.Log("🎮 กำลังโหลดเข้าฉากเกม...");
-        SceneManager.LoadScene(gameSceneName);
+        Debug.Log("🌱 เริ่มเกมใหม่! ตรงเข้าหน้าเกมหลักเลย...");
+        // ฝากเลข 0 ไปบอก GameManager ว่า "เริ่มเล่นใหม่ ตัวเปล่า ไม่ต้องโหลดเซฟนะ"
+        PlayerPrefs.SetInt("SlotToLoad", 0);
+        // สั่งวาร์ปเข้าฉาก Main ทันที
+        SceneManager.LoadScene(mainGameSceneName);
     }
 
-    // ฟังก์ชันสำหรับปุ่ม "ตั้งค่า" (กดแล้วสลับหน้าต่าง)
-    public void OpenSettings()
+    public void LoadGameFromMenu(int slotNumber)
     {
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-        if (settingsPanel != null) settingsPanel.SetActive(true);
+        if (PlayerPrefs.HasKey("SaveSlot_" + slotNumber))
+        {
+            Debug.Log($"💾 กำลังโหลดช่องที่ {slotNumber} เข้าฉากหลัก...");
+            // ฝากเลขช่องเซฟไว้ให้ GameManager โหลดของใส่กระเป๋าตอนเข้าฉาก
+            PlayerPrefs.SetInt("SlotToLoad", slotNumber);
+            SceneManager.LoadScene(mainGameSceneName);
+        }
+        else
+        {
+            Debug.Log("❌ ช่องนี้ไม่มีเซฟครับ!");
+        }
     }
 
-    // ฟังก์ชันสำหรับปุ่ม "ย้อนกลับ" ในหน้าตั้งค่า
-    public void CloseSettings()
+    // ==========================================
+    // 🖥️ ระบบสลับหน้าต่าง และ อัปเดตข้อความเซฟ
+    // ==========================================
+    public void ShowMainMenu()
     {
-        if (settingsPanel != null) settingsPanel.SetActive(false);
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+        if (mainMenuPanel) mainMenuPanel.SetActive(true);
+        if (loadPanel) loadPanel.SetActive(false);
+        if (settingsPanel) settingsPanel.SetActive(false);
     }
 
-    // ฟังก์ชันสำหรับปุ่ม "ออกจากเกม"
-    public void QuitGame()
+    public void ShowLoadMenu()
     {
-        Debug.Log("🚪 ปิดเกมแล้วจ้า!");
+        if (mainMenuPanel) mainMenuPanel.SetActive(false);
+        if (loadPanel) loadPanel.SetActive(true);
+        if (settingsPanel) settingsPanel.SetActive(false);
+        UpdateLoadUI();
+    }
 
-        // คำสั่งนี้จะทำงานตอนที่พอร์ตเกมเป็นไฟล์ .exe หรือลงมือถือแล้วเท่านั้น
-        Application.Quit();
-    }
-    // ฟังก์ชันสำหรับรับค่าจากหลอด Slider มาปรับระดับเสียงเกม
-    public void SetGlobalVolume(float sliderValue)
+    public void ShowSettingsMenu()
     {
-        // ปรับระดับเสียงรวมของทั้งเกม (0.0 คือเงียบสุด, 1.0 คือดังสุด)
-        AudioListener.volume = sliderValue;
+        if (mainMenuPanel) mainMenuPanel.SetActive(false);
+        if (loadPanel) loadPanel.SetActive(false);
+        if (settingsPanel) settingsPanel.SetActive(true);
     }
+
+    public void UpdateLoadUI()
+    {
+        for (int i = 0; i < slotTexts.Length; i++)
+        {
+            int slotNumber = i + 1;
+            if (slotTexts[i] == null) continue;
+
+            if (PlayerPrefs.HasKey("SaveSlot_" + slotNumber))
+            {
+                slotTexts[i].text = "ช่องเซฟ " + slotNumber + " : มีข้อมูล 💾";
+                slotTexts[i].color = new Color(0.2f, 0.8f, 0.2f);
+            }
+            else
+            {
+                slotTexts[i].text = "ช่องเซฟ " + slotNumber + " : ว่างเปล่า";
+                slotTexts[i].color = Color.white;
+            }
+        }
+    }
+
+    // ==========================================
+    // 🔊 ระบบตั้งค่าเสียง
+    // ==========================================
+    public void SetMusicVolume(float sliderValue)
+    {
+        if (mainMixer != null)
+        {
+            mainMixer.SetFloat("MusicVol", Mathf.Log10(Mathf.Max(sliderValue, 0.0001f)) * 20f);
+            PlayerPrefs.SetFloat("SavedMusicVol", sliderValue);
+        }
+    }
+    public void SetSFXVolume(float sliderValue)
+    {
+        if (mainMixer != null)
+        {
+            mainMixer.SetFloat("SFXVol", Mathf.Log10(Mathf.Max(sliderValue, 0.0001f)) * 20f);
+            PlayerPrefs.SetFloat("SavedSFXVol", sliderValue);
+        }
+    }
+
+    public void QuitGame() { Application.Quit(); }
 }

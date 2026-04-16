@@ -68,6 +68,20 @@ public class GameManager : MonoBehaviour
         if (settingsPanel) settingsPanel.SetActive(false);
 
         UpdateSaveUI();
+
+        // =========================================================
+        // 🌟 [ระบบรับสัญญาณจากหน้าเมนู] 
+        // เช็คว่าผู้เล่นกดโหลดเซฟช่องไหนมาจาก Scene MainMenu 
+        // =========================================================
+        int slotToLoad = PlayerPrefs.GetInt("SlotToLoad", 0);
+
+        if (slotToLoad > 0) // ถ้าเลขมากกว่า 0 แปลว่ามีการสั่งโหลดเกมข้าม Scene มา
+        {
+            Debug.Log("🔄 รับคำสั่งจากหน้าเมนู! กำลังโหลดเซฟช่องที่: " + slotToLoad);
+            LoadGame(slotToLoad); // สั่งดึงข้อมูลกระเป๋า ตัวละคร เควส มาใส่ทันที
+
+            PlayerPrefs.SetInt("SlotToLoad", 0); // 🚨 โหลดเสร็จต้องล้างค่าทิ้ง เพื่อไม่ให้มันโหลดซ้ำตอนตายหรือเปลี่ยนฉาก
+        }
     }
 
     void Update()
