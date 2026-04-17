@@ -7,6 +7,7 @@ public class CraftingManager : MonoBehaviour
     public static CraftingManager instance;
 
     [Header("UI References")]
+    public GameObject craftingPanel; // ⭐ ลากตัว Panel หน้าต่างคราฟต์มาใส่ตรงนี้
     public CraftingSlot[] inputSlots;
     public Image resultPreviewImage;
     public Button craftButton;
@@ -24,6 +25,25 @@ public class CraftingManager : MonoBehaviour
     {
         if (resultPreviewImage != null) resultPreviewImage.enabled = false;
         if (craftButton != null) craftButton.interactable = false;
+    }
+
+    // ⭐ ฟังก์ชันใหม่สำหรับปิดหน้าต่าง (ใช้ผูกกับปุ่มปิดหน้าต่าง)
+    public void CloseCraftingUI()
+    {
+        // 1. คืนของที่ค้างบนโต๊ะเข้ากระเป๋า
+        CancelCrafting();
+
+        // 2. ปิดหน้าต่าง UI
+        if (craftingPanel != null) craftingPanel.SetActive(false);
+
+        // 3. ปลดล็อกเม้าส์ (ถ้ามีระบบล็อก)
+        Cursor.visible = true;
+
+        // 4. ⭐ สำคัญที่สุด: สั่งให้ผู้เล่นเลิกท่าคราฟต์ทันที
+        if (PlayerController.instance != null)
+        {
+            PlayerController.instance.SetCraftingState(false);
+        }
     }
 
     public void CheckRecipe()
@@ -94,49 +114,39 @@ public class CraftingManager : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // ⭐ ส่วนที่แก้ไข: เพิ่มระบบหน่วงเวลาคราฟและเล่นอนิเมชั่น
-    // ==========================================
     public void ConfirmCraft()
     {
         if (currentRecipe != null)
         {
-            // เปลี่ยนไปใช้ Coroutine เพื่อให้รอเวลาได้
             StartCoroutine(CraftingRoutine());
         }
     }
 
     private System.Collections.IEnumerator CraftingRoutine()
     {
-        // 1. ปิดปุ่มคราฟชั่วคราว ป้องกันผู้เล่นกดเบิ้ลรัวๆ
         if (craftButton != null) craftButton.interactable = false;
 
-        // 2. สั่งให้ Player เล่นอนิเมชั่นก้มคราฟของ
         if (PlayerController.instance != null)
         {
             PlayerController.instance.SetCraftingState(true);
         }
 
-        // 3. หน่วงเวลาคราฟ (ปรับตัวเลข 1.5f ได้ตามต้องการว่าอยากให้ก้มนานแค่ไหน)
         yield return new WaitForSeconds(1.5f);
 
-        // 4. ให้ของรางวัลเข้ากระเป๋า
         Inventory.instance.AddItem(currentRecipe.result, currentRecipe.resultAmount);
         string craftedItemName = currentRecipe.result.itemName;
 
-        // 5. ล้างของบนโต๊ะทิ้ง
         foreach (var slot in inputSlots)
         {
             if (slot != null) slot.ClearSlot();
         }
 
-        // 6. สั่งให้ Player เลิกเล่นอนิเมชั่นก้ม และกลับมายืนปกติ
+        // ⭐ คืนสถานะหลังคราฟเสร็จ
         if (PlayerController.instance != null)
         {
             PlayerController.instance.SetCraftingState(false);
         }
 
-        // 7. รีเซ็ต UI โต๊ะคราฟ
         CheckRecipe();
         Debug.Log($"คราฟต์ {craftedItemName} สำเร็จ!");
     }
@@ -151,6 +161,13 @@ public class CraftingManager : MonoBehaviour
                 slot.ClearSlot();
             }
         }
+
+        // ⭐ เพิ่มบรรทัดนี้: เผื่อมีการกดยกเลิกกลางคัน ให้ตัวละครกลับมายืนปกติ
+        if (PlayerController.instance != null)
+        {
+            PlayerController.instance.SetCraftingState(false);
+        }
+
         CheckRecipe();
         Debug.Log("ยกเลิกและคืนของเรียบร้อย");
     }
@@ -170,5 +187,4 @@ public class CraftingManager : MonoBehaviour
         }
         return total;
     }
-
 }

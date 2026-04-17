@@ -3,11 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using TMPro;
-using UnityEngine.Events; // ⭐ [เพิ่ม] ดึงไลบรารี UnityEvent มาใช้สำหรับสร้าง Event เนื้อเรื่อง
+using UnityEngine.Events;
 
 public class DualNPC : MonoBehaviour
 {
-    // ⭐ [อัปเกรด] เพิ่ม TalkOnly เข้ามา สำหรับเควสที่แค่เดินไปหา NPC แล้วกดคุยก็ผ่านเลย
     public enum QuestType { Consumable, NonConsumable, TalkOnly }
 
     [System.Serializable]
@@ -21,7 +20,7 @@ public class DualNPC : MonoBehaviour
         public int requiredAmount = 1;
 
         [Header("ของรางวัล (เมื่อส่งเควสสำเร็จ)")]
-        public ItemData rewardItem; // ⭐ ไอเทมที่จะได้รับ (เช่น สมุดบันทึก)
+        public ItemData rewardItem;
         public int rewardAmount = 1;
         public int pageToUnlock = 1;
 
@@ -31,8 +30,8 @@ public class DualNPC : MonoBehaviour
         [TextArea] public string questSuccessDialogue = "โอ้! ขอบใจเจ้ามาก นี่คือรางวัลของเจ้า!";
 
         [Header("เหตุการณ์เนื้อเรื่อง (Events)")]
-        public UnityEvent onQuestAccepted;  // ⭐ เกิดขึ้นตอน "กดรับเควส" (เช่น เสกผี Watching Hour)
-        public UnityEvent onQuestCompleted; // ⭐ เกิดขึ้นตอน "ส่งเควส" (เช่น เปิดหน้าต่างสกิล, เปิดประตู)
+        public UnityEvent onQuestAccepted;
+        public UnityEvent onQuestCompleted;
 
         [HideInInspector] public bool isCompleted = false;
         [HideInInspector] public bool hasAccepted = false;
@@ -43,7 +42,6 @@ public class DualNPC : MonoBehaviour
     public string npcName = "Mysterious Merchant";
     public Sprite portrait;
     [TextArea] public string fallbackGreeting = "ไม่มีอะไรให้เจ้าทำแล้วล่ะไอ้หนุ่ม...";
-
 
     [Header("Dialogue UI Settings")]
     public GameObject dialoguePanel;
@@ -56,6 +54,10 @@ public class DualNPC : MonoBehaviour
     [Header("Quest Settings")]
     public List<QuestData> quests = new List<QuestData>();
     public int currentQuestIndex = 0;
+
+    // ⭐ [เพิ่มใหม่] ช่องสำหรับใส่ OB บอส
+    [Header("Boss Settings (Endgame)")]
+    public GameObject bossPlaceholder;
 
     [Header("UI Selection Panel")]
     public GameObject selectionPanel;
@@ -80,6 +82,9 @@ public class DualNPC : MonoBehaviour
         if (selectionPanel != null) selectionPanel.SetActive(false);
         if (dialoguePanel != null) dialoguePanel.SetActive(false);
         if (allQuestsDoneUI != null) allQuestsDoneUI.SetActive(false);
+
+        // ⭐ ซ่อนบอสไว้ก่อนตอนเริ่มเกม (กันมันโผล่มาก่อนกำหนด)
+        if (bossPlaceholder != null) bossPlaceholder.SetActive(false);
 
         if (shopButton != null)
         {
@@ -145,7 +150,7 @@ public class DualNPC : MonoBehaviour
     {
         string fullText = textToType;
 
-        yield return new WaitForSeconds(0.1f); // กันบั๊กปุ่มลั่น
+        yield return new WaitForSeconds(0.1f);
 
         if (dialogueText != null)
         {
@@ -255,12 +260,10 @@ public class DualNPC : MonoBehaviour
         if (selectionPanel != null) selectionPanel.SetActive(false);
         isShowingUI = true;
 
-        // ถ้ายังไม่ได้กดรับเควส
         if (!currentQuest.hasAccepted)
         {
             currentQuest.hasAccepted = true;
 
-            // ⭐ [อัปเกรด] สั่งทำงาน Event "ตอนรับเควส" ทันที!
             currentQuest.onQuestAccepted?.Invoke();
 
             if (typingCoroutine != null) StopCoroutine(typingCoroutine);
@@ -270,29 +273,24 @@ public class DualNPC : MonoBehaviour
 
         bool canComplete = false;
 
-        // ⭐ [อัปเกรด] ตรวจสอบเงื่อนไขการส่งเควสแบบใหม่
         if (currentQuest.questType == QuestType.TalkOnly)
         {
-            // ถ้าเป็นเควสแบบเดินมาคุย ก็ให้ผ่านได้เลย
             canComplete = true;
         }
         else
         {
-            // ถ้าเป็นเควสหาของ เช็คกระเป๋าว่ามีของครบไหม
             if (Inventory.instance != null && Inventory.instance.HasItem(currentQuest.questItem, currentQuest.requiredAmount))
             {
                 canComplete = true;
             }
         }
 
-        // ถ้าเงื่อนไขผ่าน ให้จบเควส
         if (canComplete)
         {
             CompleteCurrentQuest(currentQuest);
         }
         else
         {
-            // ถ้าของไม่ครบ หรือยังไม่ผ่าน ให้พูดประโยคให้ไปหาของซ้ำ
             if (typingCoroutine != null) StopCoroutine(typingCoroutine);
             typingCoroutine = StartCoroutine(TypeDialogueCoroutine(currentQuest.questStartDialogue, false));
         }
@@ -302,19 +300,16 @@ public class DualNPC : MonoBehaviour
     {
         quest.isCompleted = true;
 
-        // หักไอเทมในกระเป๋า (เฉพาะประเภท Consumable)
         if (quest.questType == QuestType.Consumable)
         {
             if (Inventory.instance != null)
                 Inventory.instance.RemoveItem(quest.questItem, quest.requiredAmount);
         }
 
-        // ⭐ [อัปเกรด] แจกของรางวัลเข้ากระเป๋าผู้เล่น!
         if (quest.rewardItem != null && Inventory.instance != null)
         {
             for (int i = 0; i < quest.rewardAmount; i++)
             {
-                // สมมติว่าระบบกระเป๋าใช้คำสั่ง AddItem (ถ้าของเดิมเป็นชื่ออื่น แจ้งผมแก้ให้ได้นะครับ)
                 Inventory.instance.AddItem(quest.rewardItem);
             }
         }
@@ -322,13 +317,23 @@ public class DualNPC : MonoBehaviour
         if (BookUI.instance != null)
             BookUI.instance.UnlockNewPage(quest.pageToUnlock);
 
-        // ⭐ [อัปเกรด] สั่งทำงาน Event "ตอนส่งเควสสำเร็จ" ทันที!
         quest.onQuestCompleted?.Invoke();
 
         currentQuestIndex++;
 
-        if (currentQuestIndex >= quests.Count && allQuestsDoneUI != null)
-            allQuestsDoneUI.SetActive(true);
+        // ⭐ ตรวจสอบว่าทำเควสเสร็จครบทุกเควสแล้วหรือยัง
+        if (currentQuestIndex >= quests.Count)
+        {
+            if (allQuestsDoneUI != null)
+                allQuestsDoneUI.SetActive(true);
+
+            // ⭐ [สั่งเปิดตัวบอส] เมื่อเควสหมด ให้เปิดการทำงานของ OB บอสทันที!
+            if (bossPlaceholder != null)
+            {
+                bossPlaceholder.SetActive(true);
+                Debug.Log("🔥 เควสหมดแล้ว! ทำการเสก Boss Placeholder ออกมา!");
+            }
+        }
 
         if (typingCoroutine != null) StopCoroutine(typingCoroutine);
         typingCoroutine = StartCoroutine(TypeDialogueCoroutine(quest.questSuccessDialogue, false));
