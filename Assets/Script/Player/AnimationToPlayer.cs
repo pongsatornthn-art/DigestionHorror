@@ -16,9 +16,8 @@ public class AnimationToPlayer : MonoBehaviour
     {
         if (player != null)
         {
-            // สั่งให้ตัวแม่ทำการคำนวณดาเมจ
-            bool isLight = (isLightAttack == 1);
-            player.DealDamageWithAttackType(isLight);
+            // เปลี่ยนจาก DealDamageWithAttackType เป็น DealDamage() เฉยๆ ครับ
+            player.DealDamage();
         }
     }
 }

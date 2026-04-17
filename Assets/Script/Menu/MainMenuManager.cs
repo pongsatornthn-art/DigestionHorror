@@ -12,8 +12,8 @@ public class MainMenuManager : MonoBehaviour
     public GameObject settingsPanel;
 
     [Header("การตั้งค่า Scene")]
-    // 👈 ตัด Tutorial ทิ้งไป เหลือแค่ฉากเกมหลักฉากเดียว
-    public string mainGameSceneName = "Main";
+    public string newGameSceneName = "Newgame"; // 👈 ใส่ชื่อซีนสำหรับปุ่ม New Game
+    public string mainGameSceneName = "Main";   // 👈 ใส่ชื่อซีนสำหรับปุ่ม Start Game
 
     [Header("ระบบโหลดเซฟ UI")]
     public TMP_Text[] slotTexts;
@@ -33,14 +33,22 @@ public class MainMenuManager : MonoBehaviour
     }
 
     // ==========================================
-    // 🚀 ระบบเริ่มเกมใหม่ / โหลดเกม
+    // 🚀 ระบบปุ่มเข้าเกม (แยก 2 ปุ่ม)
     // ==========================================
+
+    // ⭐ ฟังก์ชันสำหรับปุ่ม "New Game" -> ไปฉาก Newgame
     public void NewGame()
     {
-        Debug.Log("🌱 เริ่มเกมใหม่! ตรงเข้าหน้าเกมหลักเลย...");
-        // ฝากเลข 0 ไปบอก GameManager ว่า "เริ่มเล่นใหม่ ตัวเปล่า ไม่ต้องโหลดเซฟนะ"
+        Debug.Log("🌱 โหลดหน้า Newgame...");
         PlayerPrefs.SetInt("SlotToLoad", 0);
-        // สั่งวาร์ปเข้าฉาก Main ทันที
+        SceneManager.LoadScene(newGameSceneName);
+    }
+
+    // ⭐ ฟังก์ชันสำหรับปุ่ม "Start Game" -> ดิ่งไปฉาก Main เลย
+    public void StartGame()
+    {
+        Debug.Log("⚔️ เข้าเกมหลัก (Main) ทันที...");
+        PlayerPrefs.SetInt("SlotToLoad", 0);
         SceneManager.LoadScene(mainGameSceneName);
     }
 
@@ -49,7 +57,6 @@ public class MainMenuManager : MonoBehaviour
         if (PlayerPrefs.HasKey("SaveSlot_" + slotNumber))
         {
             Debug.Log($"💾 กำลังโหลดช่องที่ {slotNumber} เข้าฉากหลัก...");
-            // ฝากเลขช่องเซฟไว้ให้ GameManager โหลดของใส่กระเป๋าตอนเข้าฉาก
             PlayerPrefs.SetInt("SlotToLoad", slotNumber);
             SceneManager.LoadScene(mainGameSceneName);
         }
@@ -124,5 +131,8 @@ public class MainMenuManager : MonoBehaviour
         }
     }
 
-    public void QuitGame() { Application.Quit(); }
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
 }

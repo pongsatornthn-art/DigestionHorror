@@ -5,13 +5,17 @@ public class EnemyKid : MonoBehaviour
     [Header("Detection Settings")]
     public float detectionRange = 10f;
     [Range(0, 360)]
-    public float viewAngle = 90f; // มุมมองเป็นองศา (เช่น 90 คือด้านหน้า)
-    public LayerMask targetMask;  // เลือก Layer Player
-    public LayerMask obstructionMask; // เลือก Layer Wall/Obstacle
+    public float viewAngle = 90f;
+    public LayerMask targetMask;
+    public LayerMask obstructionMask;
     private bool isPlayerDetected = false;
 
     [Header("Target")]
     public Transform player;
+
+    [Header("Roam Settings (ระบบเดินสุ่ม)")]
+    private Vector2 roamDir;
+    private float roamTimer;
 
     [Header("Movement Settings")]
     public float moveSpeed = 4f;
@@ -27,16 +31,20 @@ public class EnemyKid : MonoBehaviour
     private float nextThrowTime;
     private Rigidbody2D rb;
     private float currentAngle;
+    private Animator anim;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        // ค้นหา Player อัตโนมัติถ้าไม่ได้ใส่ใน Inspector
+        anim = GetComponent<Animator>();
+
         if (player == null)
         {
             GameObject p = GameObject.FindGameObjectWithTag("Player");
             if (p != null) player = p.transform;
         }
+
+        PickNewRoamDirection(); // สุ่มทิศทางเดินตั้งแต่เริ่ม
     }
 
     void Update()
@@ -44,67 +52,72 @@ public class EnemyKid : MonoBehaviour
         if (player == null) return;
 
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+        FieldOfViewCheck();
 
-        // --- ระบบการมองเห็น ---
-        if (!isPlayerDetected)
+        if (isPlayerDetected)
         {
-            FieldOfViewCheck(); // ฟังก์ชันเช็ค FOV ที่เราเพิ่มเข้าไปใหม่
-        }
-        else
-        {
-            // ถ้าเคยเห็นแล้ว แต่ตอนนี้ผู้เล่นหนีไปไกลเกิน (หรือแอบหลังกำแพง) ให้เลิกตามและหยุดโจมตี
-            // คุณสามารถเพิ่มการเช็ค Raycast ตรงนี้ได้ถ้าต้องการให้หยุดทันทีที่เข้าที่บัง
             if (distanceToPlayer > detectionRange * 1.5f || !CanSeePlayerNow())
             {
                 isPlayerDetected = false;
-                rb.linearVelocity = Vector2.zero;
-                return; // ออกจากฟังก์ชันทันทีเพื่อไม่ให้ไปถึงส่วนการเคลื่อนที่และโจมตี
+                return;
             }
-        }
 
-        // --- ส่วนนี้จะทำงานเฉพาะตอน isPlayerDetected == true เท่านั้น ---
-        if (isPlayerDetected)
-        {
-            HandleMovement(distanceToPlayer); // จัดการการวิ่งวน
-            HandleCombat();   // จัดการการปาหิน
+            HandleMovement(distanceToPlayer);
+            HandleCombat();
         }
         else
         {
-            rb.linearVelocity = Vector2.zero;
+            HandlePatrol(); // เข้าสู่โหมดเดินสุ่ม
         }
+    }
+
+    // --- ระบบเดินสุ่ม (Random Roam) ---
+    void PickNewRoamDirection()
+    {
+        float randomAngle = Random.Range(0f, 360f);
+        roamDir = new Vector2(Mathf.Cos(randomAngle * Mathf.Deg2Rad), Mathf.Sin(randomAngle * Mathf.Deg2Rad)).normalized;
+        roamTimer = Random.Range(2f, 4f); // สุ่มเวลาเดิน 2-4 วินาที
+    }
+
+    void HandlePatrol()
+    {
+        roamTimer -= Time.deltaTime;
+
+        // เช็คว่ามีกำแพงขวางหน้าในระยะ 1.5 หน่วยไหม
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, roamDir, 1.5f, obstructionMask);
+
+        // ถ้าชนกำแพง หรือหมดเวลาเดิน ให้สุ่มทิศใหม่ทันที
+        if (hit.collider != null || roamTimer <= 0f)
+        {
+            PickNewRoamDirection();
+        }
+
+        rb.linearVelocity = roamDir * (moveSpeed * 0.7f);
+        anim.SetBool("isWalking", true);
+
+        // หันหน้าตามทิศที่เดิน
+        float angle = Mathf.Atan2(roamDir.y, roamDir.x) * Mathf.Rad2Deg - 90f;
+        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0, 0, angle), Time.deltaTime * 5f);
     }
 
     bool CanSeePlayerNow()
     {
         Vector2 directionToPlayer = (player.position - transform.position).normalized;
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
-
-        // เช็คว่ามีกำแพงมาบังระหว่างทางหรือไม่
-        if (Physics2D.Raycast(transform.position, directionToPlayer, distanceToPlayer, obstructionMask))
-        {
-            return false; // มีกำแพงบัง
-        }
-        return true; // ยังเห็นอยู่
+        return !Physics2D.Raycast(transform.position, directionToPlayer, distanceToPlayer, obstructionMask);
     }
-
 
     void FieldOfViewCheck()
     {
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
-
         if (distanceToPlayer <= detectionRange)
         {
             Vector2 directionToPlayer = (player.position - transform.position).normalized;
-
-            // เช็คมุมมอง (เปรียบเทียบกับทิศทางที่ศัตรูหันหน้าไป ปัจจุบันใช้ Vector2.up เป็นหน้า)
-            // หมายเหตุ: หากศัตรูมีการหมุนตัว ให้เปลี่ยน Vector2.up เป็น transform.up
             if (Vector2.Angle(transform.up, directionToPlayer) < viewAngle / 2)
             {
-                // เช็คว่ามีกำแพงบังไหม
                 if (!Physics2D.Raycast(transform.position, directionToPlayer, distanceToPlayer, obstructionMask))
                 {
                     isPlayerDetected = true;
-                    Debug.Log("Enemy Kid: เจอตัวแล้ว!");
                 }
             }
         }
@@ -116,14 +129,12 @@ public class EnemyKid : MonoBehaviour
 
         if (distanceToPlayer < retreatDistance)
         {
-            // ถอยหลังหนี
             moveDir = (transform.position - player.position).normalized;
             Vector2 offset = transform.position - player.position;
             currentAngle = Mathf.Atan2(offset.y, offset.x);
         }
         else
         {
-            // วิ่งวนรอบผู้เล่น (Orbit)
             currentAngle += orbitSpeed * Time.deltaTime;
             float targetX = player.position.x + Mathf.Cos(currentAngle) * orbitDistance;
             float targetY = player.position.y + Mathf.Sin(currentAngle) * orbitDistance;
@@ -133,7 +144,6 @@ public class EnemyKid : MonoBehaviour
 
         rb.linearVelocity = moveDir * moveSpeed;
 
-        // หันหน้าไปหา Player ตลอดเวลาเมื่อเห็นแล้ว
         Vector2 lookDir = (Vector2)player.position - rb.position;
         float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
         transform.rotation = Quaternion.Euler(0, 0, angle);
@@ -141,9 +151,12 @@ public class EnemyKid : MonoBehaviour
 
     void HandleCombat()
     {
-        // โจมตีเฉพาะเมื่ออยู่ในสถานะ Detected และถึงเวลา Cooldown
-        if (isPlayerDetected && Time.time > nextThrowTime)
+        rb.linearVelocity = Vector2.zero;
+        anim.SetBool("isWalking", false);
+
+        if (Time.time > nextThrowTime)
         {
+            anim.Play("Kid_attack");
             ThrowRock();
             nextThrowTime = Time.time + throwCooldown;
         }
@@ -156,33 +169,17 @@ public class EnemyKid : MonoBehaviour
             GameObject rock = Instantiate(rockPrefab, transform.position, Quaternion.identity);
             Vector2 dirToPlayer = (player.position - transform.position).normalized;
             Rigidbody2D rockRb = rock.GetComponent<Rigidbody2D>();
-            if (rockRb != null)
-            {
-                rockRb.AddForce(dirToPlayer * throwForce, ForceMode2D.Impulse);
-            }
+            if (rockRb != null) rockRb.AddForce(dirToPlayer * throwForce, ForceMode2D.Impulse);
         }
     }
 
-    // วาด Gizmos เพื่อให้เห็นระยะในหน้า Scene
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
 
-        // วาดเส้นขอบเขตการมองเห็น
-        Vector3 viewAngleA = DirFromAngle(-viewAngle / 2, false);
-        Vector3 viewAngleB = DirFromAngle(viewAngle / 2, false);
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(transform.position, transform.position + viewAngleA * detectionRange);
-        Gizmos.DrawLine(transform.position, transform.position + viewAngleB * detectionRange);
-    }
-
-    private Vector3 DirFromAngle(float angleInDegrees, bool angleIsGlobal)
-    {
-        if (!angleIsGlobal)
-        {
-            angleInDegrees += transform.eulerAngles.z;
-        }
-        return new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), Mathf.Cos(angleInDegrees * Mathf.Deg2Rad), 0);
+        // วาดเส้น Raycast เช็คกำแพงให้เห็นตอนเล่น
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(transform.position, roamDir * 1.5f);
     }
 }

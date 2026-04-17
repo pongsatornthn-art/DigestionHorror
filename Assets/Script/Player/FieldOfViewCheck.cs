@@ -24,7 +24,7 @@ public class FieldOfViewCheck : MonoBehaviour
         // 1. สร้างลิสต์ชั่วคราว เพื่อจดชื่อศัตรูที่ "เห็นในรอบนี้"
         List<Transform> targetsSeenThisFrame = new List<Transform>();
 
-        // 2. หาศัตรูทั้งหมดในระยะวงกลม (ไม่ต้องลากใส่ target แล้ว!)
+        // 2. หาศัตรูทั้งหมดในระยะวงกลม
         Collider2D[] targetsInViewRadius = Physics2D.OverlapCircleAll(transform.position, viewRadius, targetMask);
 
         for (int i = 0; i < targetsInViewRadius.Length; i++)
@@ -38,10 +38,9 @@ public class FieldOfViewCheck : MonoBehaviour
                 float distToTarget = Vector3.Distance(transform.position, target.position);
 
                 // 4. เช็คกำแพง (มีกำแพงบังไหม?)
-                // ยิง Raycast ไปหาศัตรู ถ้าไม่ชนกำแพง (Wall) แสดงว่าเห็น
                 if (!Physics2D.Raycast(transform.position, dirToTarget, distToTarget, obstacleMask))
                 {
-                    // ผ่านทุกเงื่อนไข! จดชื่อไว้ว่า "รอบนี้เห็นตัวนี้นะ"
+                    // ผ่านทุกเงื่อนไข!
                     targetsSeenThisFrame.Add(target);
                 }
             }
@@ -52,7 +51,6 @@ public class FieldOfViewCheck : MonoBehaviour
         // A. ไล่ดูรายชื่อเก่า: ใครที่ "เคยเห็น" แต่ "รอบนี้ไม่เห็นแล้ว" -> สั่งซ่อน (Hide)
         foreach (Transform oldTarget in visibleTargets)
         {
-            // ถ้าศัตรูตัวนั้นยังไม่ตาย และ ไม่อยู่ในลิสต์ใหม่
             if (oldTarget != null && !targetsSeenThisFrame.Contains(oldTarget))
             {
                 var renderer = oldTarget.GetComponent<SpriteRenderer>();
@@ -60,13 +58,21 @@ public class FieldOfViewCheck : MonoBehaviour
             }
         }
 
-        // B. ไล่ดูรายชื่อใหม่: ใครที่ "เห็นในรอบนี้" -> สั่งแสดงตัว (Show)
+        // B. ไล่ดูรายชื่อใหม่: ใครที่ "เห็นในรอบนี้" -> สั่งแสดงตัว (Show) และเช็คผี
         foreach (Transform newTarget in targetsSeenThisFrame)
         {
             if (newTarget != null)
             {
+                // 1. แสดงตัวศัตรู
                 var renderer = newTarget.GetComponent<SpriteRenderer>();
                 if (renderer != null) renderer.enabled = true;
+
+                // 2. ถ้าสิ่งที่เห็นคือ EnemySpirit ให้สั่งให้มันหนี!
+                EnemySpirit spirit = newTarget.GetComponent<EnemySpirit>();
+                if (spirit != null)
+                {
+                    spirit.SetScared();
+                }
             }
         }
 

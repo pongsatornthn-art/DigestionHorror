@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using TMPro;
-using System.Collections;
+using System.Collections; // ⭐ อย่าลืมอันนี้สำหรับใช้งาน Coroutine
 
 public class PlayerController : MonoBehaviour
 {
@@ -32,6 +32,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Current Weapon Data")]
     public ItemData currentWeapon;
+    private int pendingDamage;
 
     [Header("Player Stats & UI")]
     public int maxHealth = 100;
@@ -92,7 +93,6 @@ public class PlayerController : MonoBehaviour
     public GameObject gameOverPanel;
     public AudioSource audioSource;
     public AudioClip swingSound;
-    public AudioClip heavySwingSound; // ⭐ เสียงตอนโจมตีหนัก
     public AudioClip hitSound;
     public AudioClip brokenWeaponSound;
 
@@ -137,7 +137,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (isCrafting || isDashing) return;
+        if (isCrafting || isDashing) return; // ⭐ ปิดการควบคุมตอนคราฟต์และแดช
 
         if ((InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf) || isKnockbacked)
         {
@@ -156,6 +156,7 @@ public class PlayerController : MonoBehaviour
 
         HandleInput();
 
+        // ⭐ คำสั่งกด Dash
         if (Input.GetKeyDown(KeyCode.Space) && canDash)
         {
             if (currentStamina >= dashStaminaCost)
@@ -173,6 +174,7 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        // ⭐ หลบฟิสิกส์ให้ Dash ทำงาน
         if (isDashing || isKnockbacked || isCrafting || (InventoryUI.instance != null && InventoryUI.instance.inventoryPanel.activeSelf)) return;
 
         rb.MovePosition(rb.position + movement.normalized * activeSpeed * Time.fixedDeltaTime);
@@ -185,12 +187,16 @@ public class PlayerController : MonoBehaviour
 
         if (bodyTransform != null) bodyTransform.rotation = Quaternion.Euler(0, 0, angle);
 
+        // ⭐ บังคับให้ขาหมุนหันตามเมาส์ (ทิศเดียวกับตัว) ตลอดเวลา
         if (legsTransform != null)
         {
             legsTransform.rotation = Quaternion.Euler(0, 0, angle);
         }
     }
 
+    // ==========================================
+    // ⭐ [เพิ่มใหม่] Coroutine สำหรับการ Dash
+    // ==========================================
     private IEnumerator DashRoutine()
     {
         canDash = false;
@@ -205,6 +211,7 @@ public class PlayerController : MonoBehaviour
         if (bodyAnim != null) bodyAnim.SetTrigger("Dash");
         if (legAnim != null) legAnim.SetTrigger("Dash");
 
+        // ถ้าเดินอยู่ให้พุ่งไปทางที่เดิน ถ้ายืนนิ่งให้พุ่งไปหาเมาส์
         Vector2 dashDir = movement.magnitude > 0.1f ? movement.normalized : (mousePos - rb.position).normalized;
         rb.linearVelocity = dashDir * dashSpeed;
 
@@ -225,6 +232,9 @@ public class PlayerController : MonoBehaviour
         canDash = true;
     }
 
+    // ==========================================
+    // ⭐ ระบบผลักและดึง (Push & Pull)
+    // ==========================================
     void HandleGrabInput()
     {
         if (Input.GetKeyDown(KeyCode.E) && currentGrabbedObj == null)
@@ -264,6 +274,10 @@ public class PlayerController : MonoBehaviour
         runSpeed = originalRunSpeed;
     }
 
+    // ==========================================
+    // ฟังก์ชันอื่นๆ
+    // ==========================================
+
     void HandleFootsteps()
     {
         if (movement.magnitude <= 0.1f || isKnockbacked)
@@ -297,6 +311,7 @@ public class PlayerController : MonoBehaviour
 
         StopAllCoroutines();
 
+        // ⭐ คืนค่าสถานะให้ผู้เล่นขยับได้ใหม่ เผื่อโดนตบกลางอากาศตอนกำลังแดช
         isDashing = false;
         canDash = true;
         isInvulnerable = false;
@@ -318,6 +333,7 @@ public class PlayerController : MonoBehaviour
 
     public void PlayerTakeDamage(int dmg)
     {
+        // ⭐ เช็คว่ากำลังเป็นอมตะตอนพุ่งอยู่ไหม ถ้าใช่ ให้ข้ามดาเมจไปเลย!
         if (isInvulnerable) return;
 
         currentHealth = Mathf.Max(0, currentHealth - dmg);
@@ -352,23 +368,9 @@ public class PlayerController : MonoBehaviour
             currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
         }
 
-        if (bodyAnim != null) bodyAnim.SetBool("IsDead", true);
-        if (legAnim != null) legAnim.SetBool("IsDead", true);
-
-        // ปิดการควบคุม ไม่ให้ผู้เล่นขยับได้อีก
-        this.enabled = false;
-
-        // ⭐ หน่วงเวลาโชว์หน้า UI แต่ไม่หยุดเวลาเกมแล้ว!
-        StartCoroutine(ShowGameOverRoutine());
-    }
-
-    private IEnumerator ShowGameOverRoutine()
-    {
-        // ปล่อยให้เวลาเดินปกติไป 2 วินาที ให้เห็นตัวละครล้มลงไปนอน
-        yield return new WaitForSeconds(2f);
-
-        // พอครบ 2 วิ โชว์หน้า Game Over ขึ้นมา (โลกของเกมและมอนสเตอร์จะยังคงขยับต่อไปตามปกติ!)
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
+        this.enabled = false;
+        Time.timeScale = 0f;
     }
 
     public void RestartGame()
@@ -385,15 +387,12 @@ public class PlayerController : MonoBehaviour
         {
             currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", false);
         }
-
-        if (bodyAnim != null) bodyAnim.SetBool("IsDead", false);
-        if (legAnim != null) legAnim.SetBool("IsDead", false);
-
         if (respawnPoint != null)
         {
             transform.position = respawnPoint.position;
         }
 
+        // ⭐ รีเซ็ตสถานะ ป้องกันการบั๊กเดินไม่ได้ตอนเกิดใหม่
         StopAllCoroutines();
         isDashing = false;
         canDash = true;
@@ -470,8 +469,8 @@ public class PlayerController : MonoBehaviour
         {
             if (Time.time >= nextAttackTime)
             {
-                if (Input.GetMouseButtonDown(0)) PerformAttack(true); // โจมตีเบา
-                else if (Input.GetMouseButtonDown(1)) PerformAttack(false); // โจมตีหนัก
+                if (Input.GetMouseButtonDown(0)) PerformAttack(true);
+                else if (Input.GetMouseButtonDown(1)) PerformAttack(false);
             }
         }
         else if (currentWeapon.itemType == ItemType.Consumable)
@@ -505,7 +504,6 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // ⭐ คำนวณ Stamina และ Cooldown แยกตามประเภทการโจมตี
         float cost = isLight ? currentWeapon.staminaCost : currentWeapon.heavyStaminaCost;
         if (currentStamina < cost)
         {
@@ -519,6 +517,8 @@ public class PlayerController : MonoBehaviour
 
         if (activeWeapon != null) activeWeapon.UseWeapon(durabilityLossPerHit);
 
+        pendingDamage = isLight ? currentWeapon.damage : currentWeapon.heavyDamage;
+
         if (currentActiveHolder != null)
         {
             Animator weaponAnim = currentActiveHolder.GetComponent<Animator>();
@@ -527,60 +527,27 @@ public class PlayerController : MonoBehaviour
                 weaponAnim.SetBool("IsLight", isLight);
                 weaponAnim.SetTrigger("Attack");
 
-                // ⭐ เล่นเสียงแยก โจมตีเบา/หนัก
                 if (audioSource) audioSource.pitch = 1f;
-                if (audioSource)
-                {
-                    AudioClip clipToPlay = isLight ? swingSound : heavySwingSound;
-                    if (clipToPlay != null) audioSource.PlayOneShot(clipToPlay);
-                }
+                if (audioSource && swingSound) audioSource.PlayOneShot(swingSound);
 
-                // สั่งทำดาเมจหลังจากที่ฟันไปแล้ว 0.2 วิ (เพื่อให้ตรงจังหวะอนิเมชัน)
-                StartCoroutine(DealDamageCoroutine(isLight, 0.2f));
+                Invoke("DealDamage", 0.2f);
             }
         }
     }
 
-    // ⭐ Coroutine หน่วงเวลาเพื่อให้ดาเมจออกตรงจังหวะฟัน
-    private IEnumerator DealDamageCoroutine(bool isLight, float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        DealDamageWithAttackType(isLight);
-    }
-
-    // ⭐ ระบบทำดาเมจแบบใหม่ แยกดาเมจเบา/หนัก และติดสถานะ Bleed ได้
-    public void DealDamageWithAttackType(bool isLight)
+    public void DealDamage()
     {
         if (attackPoint == null || currentActiveHolder == null || currentWeapon == null) return;
-
-        int currentDamage = isLight ? currentWeapon.damage : currentWeapon.heavyDamage;
-        float currentKnockback = isLight ? currentWeapon.knockback : currentWeapon.heavyKnockback;
-
         float zAngle = currentActiveHolder.transform.eulerAngles.z;
         Collider2D[] hitEnemies = Physics2D.OverlapBoxAll(attackPoint.position, attackBoxSize, zAngle, enemyLayers);
-
+        float currentKnockback = (pendingDamage == currentWeapon.damage) ? currentWeapon.knockback : currentWeapon.heavyKnockback;
         foreach (Collider2D enemy in hitEnemies)
         {
             EnemyStats enemyStats = enemy.GetComponent<EnemyStats>();
             if (enemyStats != null)
             {
                 Vector2 knockbackDir = (enemy.transform.position - transform.position).normalized;
-
-                // 1. ทำดาเมจ + ผลักกระเด็น
-                enemyStats.TakeDamage(currentDamage, currentKnockback, knockbackDir);
-
-                // 2. ถ้าอาวุธทำให้เลือดไหล ให้ติด Bleed ด้วย
-                if (currentWeapon.causesBleeding)
-                {
-                    enemyStats.ApplyBleed(currentWeapon.bleedDuration, currentWeapon.bleedDamagePerSec);
-                }
-
-                // 3. เล่นเสียงฟันโดนเนื้อ
-                if (audioSource != null && hitSound != null)
-                {
-                    audioSource.pitch = Random.Range(0.9f, 1.1f);
-                    audioSource.PlayOneShot(hitSound);
-                }
+                enemyStats.TakeDamage(pendingDamage, currentKnockback, knockbackDir);
             }
         }
     }
@@ -621,6 +588,9 @@ public class PlayerController : MonoBehaviour
         EquipWeapon(null);
     }
 
+    // ==========================================
+    // ⭐ [แก้ไขแล้ว] ระบบเปลี่ยนสถานะ Crafting
+    // ==========================================
     public void SetCraftingState(bool state)
     {
         isCrafting = state;
@@ -635,15 +605,30 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            if (bodyAnim != null) bodyAnim.SetBool("IsCrafting", false);
+            if (bodyAnim != null)
+            {
+                bodyAnim.SetBool("IsCrafting", false);
+                // บังคับให้เปลี่ยนสไปรท์กลับเป็นท่ายืนทันที
+                bodyAnim.Play("Iden", 0, 0f);
+            }
             if (legAnim != null) legAnim.SetBool("IsCrafting", false);
 
-            bool hasWeapon = (currentWeapon != null && currentWeapon.itemType == ItemType.Weapon);
-            if (hasWeapon && currentActiveHolder != null)
-            {
-                if (bodyTransform != null) bodyTransform.gameObject.SetActive(false);
-                currentActiveHolder.SetActive(true);
-            }
+            // ใช้ Coroutine เพื่อรอให้ภาพเปลี่ยนก่อนค่อยปิด Object
+            StartCoroutine(WaitAndDisableBody());
+        }
+    }
+
+    // ⭐ [เพิ่มใหม่] ฟังก์ชันพิเศษ: รอให้จบเฟรมเพื่อให้ Animator เปลี่ยนรูป Sprite ก่อน
+    private System.Collections.IEnumerator WaitAndDisableBody()
+    {
+        yield return new WaitForEndOfFrame();
+
+        bool hasWeapon = (currentWeapon != null && currentWeapon.itemType == ItemType.Weapon);
+
+        if (hasWeapon && currentActiveHolder != null)
+        {
+            if (bodyTransform != null) bodyTransform.gameObject.SetActive(false);
+            currentActiveHolder.SetActive(true);
         }
     }
 }

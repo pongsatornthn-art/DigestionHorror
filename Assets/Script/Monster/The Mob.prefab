@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 3448393394155363883}
   - component: {fileID: 6554232919313908619}
   - component: {fileID: 3778910816714079678}
-  - component: {fileID: 8810798253736843167}
+  - component: {fileID: 2458379052326502040}
   m_Layer: 6
   m_Name: The Mob
   m_TagString: Enemy
@@ -90,7 +90,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.58, y: 0.46}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -135,7 +135,7 @@ BoxCollider2D:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
     oldSize: {x: 0.58, y: 0.46}
-    newSize: {x: 1, y: 1}
+    newSize: {x: 0.58, y: 0.46}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
@@ -161,9 +161,9 @@ MonoBehaviour:
   minMoneyDrop: 5
   maxMoneyDrop: 20
   flashColor: {r: 1, g: 1, b: 1, a: 1}
-  flashDuration: 0.1
+  flashDuration: 1
   bleedFlashColor: {r: 1, g: 0, b: 0, a: 1}
-  bleedVisualEffect: {fileID: 6654111603369895830, guid: 301a655bbdced5e4cbfb5c0d862c0d2c, type: 3}
+  bleedVisualEffect: {fileID: 0}
   bleedIconOffset: {x: 0.5, y: 0.5}
   bleedIconScale: 1
 --- !u!114 &3448393394155363883
@@ -178,10 +178,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5052b5a68663b445882ea60d8afdd75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyChaser
+  waypoints:
+  - {fileID: 0}
+  - {fileID: 0}
+  waitAtWaypoint: 2
+  stunDuration: 2
   viewAngle: 90
   obstacleMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   player: {fileID: 0}
   moveSpeed: 3
   detectionRadius: 5
@@ -232,7 +237,7 @@ MonoBehaviour:
     m_Bits: 128
   viewDistance: 10
   fovAngle: 140
---- !u!95 &8810798253736843167
+--- !u!95 &2458379052326502040
 Animator:
   serializedVersion: 7
   m_ObjectHideFlags: 0

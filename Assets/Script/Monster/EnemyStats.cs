@@ -9,21 +9,28 @@ public class EnemyStats : MonoBehaviour
     [Header("Drop System (ไอเทม)")]
     public GameObject lootBoxPrefab;
     public float boxDestroyTime = 10f;
-    public int minMoneyDrop = 5;
-    public int maxMoneyDrop = 20;
+
+    // ==========================================
+    // ⭐ ส่วนที่เพิ่มใหม่: ระบบดรอปเงิน (Orbs)
+    // ==========================================
+    [Header("Drop Money (เงิน Orbs)")]
+    public int minMoneyDrop = 5;  // สุ่มดรอปขั้นต่ำ
+    public int maxMoneyDrop = 20; // สุ่มดรอปสูงสุด
 
     [Header("Visual Feedback (ตอนโดนตี)")]
     public Color flashColor = Color.white;
     public float flashDuration = 0.1f;
 
+    // ==========================================
+    // ⭐ ระบบเลือดไหล (Bleeding) ของเพื่อน
+    // ==========================================
     [Header("Bleeding System (ระบบเลือดไหล)")]
     public Color bleedFlashColor = Color.red;
     public GameObject bleedVisualEffect; // ลาก GameObject ภาพหยดเลือดมาใส่ช่องนี้
 
-    // ⭐ ส่วนที่เพิ่มเข้ามาใหม่สำหรับจัดตำแหน่งไอคอนเลือด
     [Header("Bleed Icon Settings (ตั้งค่าไอคอน)")]
-    public Vector2 bleedIconOffset = new Vector2(0.5f, 0.5f); // ระยะห่างจากจุดศูนย์กลางมอนสเตอร์ (X, Y)
-    public float bleedIconScale = 1f; // ปรับขนาดไอคอนให้เล็ก/ใหญ่
+    public Vector2 bleedIconOffset = new Vector2(0.5f, 0.5f); // ระยะห่างจากจุดศูนย์กลางมอนสเตอร์
+    public float bleedIconScale = 1f; // ปรับขนาดไอคอน
 
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
@@ -41,32 +48,27 @@ public class EnemyStats : MonoBehaviour
         {
             originalColor = spriteRenderer.color;
         }
+        else
+        {
+            Debug.LogError(name + " ไม่มี SpriteRenderer แปะอยู่! ระบบตัวขาวจะทำงานไม่ได้");
+        }
 
-        // ⭐ โค้ดใหม่: สร้างโคลนภาพเลือดตอนมอนสเตอร์เกิด
+        // ⭐ โค้ดสร้างโคลนภาพเลือดตอนมอนสเตอร์เกิด
         if (bleedVisualEffect != null)
         {
-            // 1. สร้างตัวโคลน (Clone) จากไฟล์ Prefab ภาพเลือด
             GameObject bleedClone = Instantiate(bleedVisualEffect);
-
-            // 2. จับตัวโคลนมาเป็นลูกของมอนสเตอร์ตัวนี้
             bleedClone.transform.SetParent(this.transform);
-
-            // 3. จัดตำแหน่งและขนาด
             bleedClone.transform.localPosition = new Vector3(bleedIconOffset.x, bleedIconOffset.y, 0f);
             bleedClone.transform.localScale = Vector3.one * bleedIconScale;
-
-            // 4. ซ่อนไว้ก่อนรอโดนตี
             bleedClone.SetActive(false);
-
-            // 5. อัปเดตให้ตัวแปรไปจำ "ตัวโคลน" แทนไฟล์ต้นฉบับ
-            bleedVisualEffect = bleedClone;
+            bleedVisualEffect = bleedClone; // จำตัวโคลนไว้ใช้แทน
         }
     }
 
     public void TakeDamage(int damage, float knockbackForce, Vector2 knockbackDirection)
     {
         hp -= damage;
-        Debug.Log(name + " โดนตี! เลือดเหลือ " + hp);
+        Debug.Log(name + " เลือดเหลือ " + hp);
 
         StartFlashEffect();
 
@@ -79,44 +81,27 @@ public class EnemyStats : MonoBehaviour
     }
 
     // ==========================================
-    // ⭐ ระบบเลือดไหล (Bleeding)
+    // ⭐ ฟังก์ชันติดสถานะเลือดไหล (โดนเรียกจาก WeaponAttack)
     // ==========================================
-    public void ApplyBleed(float duration, int damagePerSec)
+    public void ApplyBleed(float duration, float damagePerSec)
     {
         if (bleedCoroutine != null) StopCoroutine(bleedCoroutine);
         bleedCoroutine = StartCoroutine(BleedRoutine(duration, damagePerSec));
     }
 
-    IEnumerator BleedRoutine(float duration, int damagePerSec)
+    private System.Collections.IEnumerator BleedRoutine(float duration, float damagePerSec)
     {
-        float elapsed = 0f;
-
-        // ⭐ เปิดภาพไอคอนเลือดข้างๆ มอนสเตอร์
         if (bleedVisualEffect != null) bleedVisualEffect.SetActive(true);
 
-        while (elapsed < duration)
+        float timer = 0f;
+        while (timer < duration)
         {
             yield return new WaitForSeconds(1f);
-            elapsed += 1f;
-
-            hp -= damagePerSec;
-            Debug.Log($"🩸 {name} เลือดไหล! ลดไป {damagePerSec} (เหลือ {hp})");
-
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.color = bleedFlashColor;
-                yield return new WaitForSeconds(0.15f);
-                spriteRenderer.color = originalColor;
-            }
-
-            if (hp <= 0)
-            {
-                Die();
-                yield break;
-            }
+            // สั่งลดเลือด (แปลง float เป็น int) แบบไม่กระเด็น
+            TakeDamage((int)damagePerSec, 0f, Vector2.zero);
+            timer += 1f;
         }
 
-        // ⭐ เลือดหยุดไหลแล้ว ปิดภาพไอคอนเลือด
         if (bleedVisualEffect != null) bleedVisualEffect.SetActive(false);
         bleedCoroutine = null;
     }
@@ -139,19 +124,24 @@ public class EnemyStats : MonoBehaviour
 
     void Die()
     {
+        // 1. ดรอปกล่องไอเทม
         if (lootBoxPrefab != null)
         {
             GameObject droppedBox = Instantiate(lootBoxPrefab, transform.position, Quaternion.identity);
+            Debug.Log(name + " ดรอปกล่องแล้ว!");
             Destroy(droppedBox, boxDestroyTime);
         }
 
+        // 2. ดรอปเงิน (Orbs) เข้าตัวผู้เล่น
         if (PlayerController.instance != null)
         {
             int droppedMoney = Random.Range(minMoneyDrop, maxMoneyDrop + 1);
+
             if (droppedMoney > 0)
             {
                 PlayerController.instance.currentMoney += droppedMoney;
                 PlayerController.instance.UpdateUI();
+                Debug.Log($"✨ {name} ตาย! ได้รับเงิน (Orbs): {droppedMoney} | เงินรวม: {PlayerController.instance.currentMoney}");
             }
         }
 
