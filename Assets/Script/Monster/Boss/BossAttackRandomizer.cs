@@ -1,42 +1,52 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
 public class BossAttackRandomizer : MonoBehaviour
 {
     private Animator animator;
 
-    // ��駪������ç�Ѻ Trigger ���س���ҧ� Animator Window
     [SerializeField] private string[] attackTriggers = { "Attack01", "Attack02", "Attack03" };
     [SerializeField] private float minAttackDelay = 2f;
     [SerializeField] private float maxAttackDelay = 5f;
 
-    void Start()
+    private Coroutine attackRoutine; // ตัวเก็บสถานะลูปโจมตี
+
+    // ⭐ เปลี่ยนจาก Start() เป็น OnEnable() 
+    // เพื่อให้มันเริ่มทำงาน "ทุกครั้ง" ที่ถูกเควสปลดล็อค (เปิด SetActive เป็น true)
+    void OnEnable()
     {
         animator = GetComponent<Animator>();
-        // ������ٻ�����������
-        StartCoroutine(AttackRoutine());
+
+        if (animator != null && attackTriggers.Length > 0)
+        {
+            // สั่งเริ่มลูปโจมตีทันทีที่บอสโผล่มา
+            attackRoutine = StartCoroutine(AttackRoutine());
+        }
     }
 
+    // ⭐ ถ้าบอสถูกปิด (SetActive เป็น false) ให้หยุดการสุ่มตีด้วย
+    void OnDisable()
+    {
+        if (attackRoutine != null)
+        {
+            StopCoroutine(attackRoutine);
+        }
+    }
 
     IEnumerator AttackRoutine()
     {
         while (true)
         {
-            // ������������͹������դ��駵���
             float delay = Random.Range(minAttackDelay, maxAttackDelay);
             yield return new WaitForSeconds(delay);
 
             if (GetComponent<AudioSource>() != null)
                 GetComponent<AudioSource>().Play();
 
-            // �������͡ Index �ҡ��¡�� Trigger
             int randomIndex = Random.Range(0, attackTriggers.Length);
             string selectedTrigger = attackTriggers[randomIndex];
 
-            // ������ Animator ��蹷������
             animator.SetTrigger(selectedTrigger);
-
-            Debug.Log("Boss performs: " + selectedTrigger);
         }
     }
 }

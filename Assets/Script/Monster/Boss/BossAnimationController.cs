@@ -1,4 +1,4 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 
 public class BossAnimationController : MonoBehaviour
 {
@@ -8,26 +8,32 @@ public class BossAnimationController : MonoBehaviour
 
     [Header("Audio Settings")]
     [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip leftHandSwingSound;  // „ Ë‡ ’¬ß·¢π´È“¬
-    [SerializeField] private AudioClip rightHandSwingSound; // „ Ë‡ ’¬ß·¢π¢«“
+    [SerializeField] private AudioClip leftHandSwingSound;  // ‡πÄ‡∏™‡∏µ‡∏¢‡∏á‡πÅ‡∏Ç‡∏ô‡∏ã‡πâ‡∏≤‡∏¢ (Attack 01)
+    [SerializeField] private AudioClip rightHandSwingSound; // ‡πÄ‡∏™‡∏µ‡∏¢‡∏á‡πÅ‡∏Ç‡∏ô‡∏Ç‡∏ß‡∏≤ (Attack 02)
+    [SerializeField] private AudioClip bothHandSwingSound;  // ‚≠ê ‡πÄ‡∏™‡∏µ‡∏¢‡∏á‡∏ó‡∏∏‡∏ö 2 ‡∏°‡∏∑‡∏≠ (Attack 03)
 
-    // ø—ß°Ï™—π ”À√—∫‡≈Ëπ‡ ’¬ß (‡√’¬°®“° Animation Event)
-    // ‡æ‘Ë¡‡µ‘¡„π Ë«πø—ß°Ï™—π PlaySwingSound „π BossAnimationController.cs
+    // ‡∏ü‡∏±‡∏á‡∏Å‡πå‡∏ä‡∏±‡∏ô‡∏™‡∏≥‡∏´‡∏£‡∏±‡∏ö‡πÄ‡∏•‡πà‡∏ô‡πÄ‡∏™‡∏µ‡∏¢‡∏á (‡πÄ‡∏£‡∏µ‡∏¢‡∏Å‡∏à‡∏≤‡∏Å Animation Event)
     public void PlaySwingSound(string hand)
     {
         if (audioSource == null) return;
 
         if (hand == "Left" && leftHandSwingSound != null)
         {
-            audioSource.pitch = 1.0f; // ‡ ’¬ßª°µ‘ ”À√—∫·¢π´È“¬
+            audioSource.pitch = 1.0f;
             audioSource.PlayOneShot(leftHandSwingSound);
         }
         else if (hand == "Right" && rightHandSwingSound != null)
         {
-            // ª√—∫„ÀÈ‡ ’¬ß∑ÿÈ¡≈ß‡≈Á°πÈÕ¬ (0.8 - 0.9) ‡æ◊ËÕ„ÀÈ√ŸÈ ÷°∂÷ß·√ß∑ÿ∫∑’ËÀπ—°ÀπË«ß
             audioSource.pitch = 0.85f;
             audioSource.PlayOneShot(rightHandSwingSound);
             Debug.Log("Right Hand Smash!");
+        }
+        else if (hand == "Both" && bothHandSwingSound != null)
+        {
+            // ‚≠ê ‡∏ó‡πà‡∏≤‡∏ó‡∏µ‡πà 3: ‡∏õ‡∏£‡∏±‡∏ö‡πÄ‡∏™‡∏µ‡∏¢‡∏á‡πÉ‡∏´‡πâ‡∏ó‡∏∏‡πâ‡∏°‡πÅ‡∏•‡∏∞‡∏´‡∏ô‡∏±‡∏Å‡∏Ç‡∏∂‡πâ‡∏ô
+            audioSource.pitch = 0.75f;
+            audioSource.PlayOneShot(bothHandSwingSound);
+            Debug.Log("üí• DOUBLE SMASH!");
         }
     }
 
@@ -42,6 +48,12 @@ public class BossAnimationController : MonoBehaviour
         else if (hand == "Right" && rightHandHitbox != null)
         {
             rightHandHitbox.SetActive(true);
+        }
+        else if (hand == "Both")
+        {
+            // ‚≠ê ‡∏ó‡πà‡∏≤‡∏ó‡∏µ‡πà 3: ‡πÄ‡∏õ‡∏¥‡∏î Hitbox ‡∏î‡∏≤‡πÄ‡∏°‡∏à‡∏ó‡∏±‡πâ‡∏á 2 ‡∏Ç‡πâ‡∏≤‡∏á‡∏û‡∏£‡πâ‡∏≠‡∏°‡∏Å‡∏±‡∏ô‡πÄ‡∏•‡∏¢!
+            if (leftHandHitbox != null) leftHandHitbox.SetActive(true);
+            if (rightHandHitbox != null) rightHandHitbox.SetActive(true);
         }
         else
         {

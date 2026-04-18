@@ -11,12 +11,21 @@ public class MagicCircle : MonoBehaviour
     public GameObject inactiveGraphic; // รูปวงเวทย์ตอนยังไม่ติด (สีเทา)
     public GameObject activeGraphic;   // รูปวงเวทย์ตอนติดแล้ว (สีแดงสว่าง)
 
+    // ⭐ ส่วนที่เพิ่มเข้ามา: ระบบเสียง
+    [Header("ระบบเสียง")]
+    public AudioSource audioSource;
+    public AudioClip activateSound;   // เสียงตอนวงเวทย์ติด (สว่าง)
+    public AudioClip deactivateSound; // เสียงตอนวงเวทย์ดับ (เอาหุ่นออก)
+
     private WeaponAttack playerWeapon;
 
     void Start()
     {
         // เริ่มเกมมาให้วงเวทย์ปิดอยู่
         UpdateVisuals(false);
+
+        // ถ้าลืมลาก AudioSource มาใส่ ให้มันหาในตัวเองอัตโนมัติ
+        if (audioSource == null) audioSource = GetComponent<AudioSource>();
 
         // แอบหาตัวสคริปต์โจมตีของผู้เล่นมารอไว้เลย
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -35,6 +44,12 @@ public class MagicCircle : MonoBehaviour
             Debug.Log("✅ หุ่นเข้าวงเวทย์แล้ว! ผู้เล่นได้รับบัฟโจมตี!");
             UpdateVisuals(true);
 
+            // ⭐ เล่นเสียงตอนวงเวทย์ทำงาน
+            if (audioSource != null && activateSound != null)
+            {
+                audioSource.PlayOneShot(activateSound);
+            }
+
             // ส่งบัฟดาเมจให้ผู้เล่น
             if (playerWeapon != null)
             {
@@ -50,6 +65,12 @@ public class MagicCircle : MonoBehaviour
         {
             Debug.Log("❌ หุ่นหลุดออกจากวงเวทย์! พลังโจมตีกลับเป็นปกติ");
             UpdateVisuals(false);
+
+            // ⭐ เล่นเสียงตอนวงเวทย์ดับ
+            if (audioSource != null && deactivateSound != null)
+            {
+                audioSource.PlayOneShot(deactivateSound);
+            }
 
             // ดึงบัฟดาเมจกลับคืน
             if (playerWeapon != null)

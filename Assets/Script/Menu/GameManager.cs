@@ -5,9 +5,6 @@ using System.IO;
 using TMPro;
 using System.Collections.Generic;
 
-// ==========================================
-// 📦 1. ข้อมูลที่จะถูกเซฟลงเครื่อง (เพิ่มกระเป๋าและเควส)
-// ==========================================
 [System.Serializable]
 public class SaveData
 {
@@ -16,11 +13,9 @@ public class SaveData
     public float stamina;
     public int money;
 
-    // ⭐ ส่วนเก็บข้อมูลกระเป๋า
     public List<string> inventoryItemNames = new List<string>();
     public List<int> inventoryItemAmounts = new List<int>();
 
-    // ⭐ ส่วนเก็บข้อมูลเควส
     public int currentQuestIndex;
     public bool isCurrentQuestAccepted;
 }
@@ -69,18 +64,14 @@ public class GameManager : MonoBehaviour
 
         UpdateSaveUI();
 
-        // =========================================================
-        // 🌟 [ระบบรับสัญญาณจากหน้าเมนู] 
-        // เช็คว่าผู้เล่นกดโหลดเซฟช่องไหนมาจาก Scene MainMenu 
-        // =========================================================
         int slotToLoad = PlayerPrefs.GetInt("SlotToLoad", 0);
 
-        if (slotToLoad > 0) // ถ้าเลขมากกว่า 0 แปลว่ามีการสั่งโหลดเกมข้าม Scene มา
+        if (slotToLoad > 0)
         {
             Debug.Log("🔄 รับคำสั่งจากหน้าเมนู! กำลังโหลดเซฟช่องที่: " + slotToLoad);
-            LoadGame(slotToLoad); // สั่งดึงข้อมูลกระเป๋า ตัวละคร เควส มาใส่ทันที
+            LoadGame(slotToLoad);
 
-            PlayerPrefs.SetInt("SlotToLoad", 0); // 🚨 โหลดเสร็จต้องล้างค่าทิ้ง เพื่อไม่ให้มันโหลดซ้ำตอนตายหรือเปลี่ยนฉาก
+            PlayerPrefs.SetInt("SlotToLoad", 0);
         }
     }
 
@@ -115,9 +106,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // 🛑 ระบบหยุดเกมและสลับหน้าต่าง UI
-    // ==========================================
     public void PauseGame() { isPaused = true; Time.timeScale = 0f; ShowPauseMainMenu(); }
     public void ResumeGame()
     {
@@ -158,9 +146,6 @@ public class GameManager : MonoBehaviour
         if (settingsPanel) settingsPanel.SetActive(true);
     }
 
-    // ==========================================
-    // 🔊 ระบบตั้งค่าเสียง
-    // ==========================================
     public void SetMusicVolume(float sliderValue)
     {
         if (mainMixer != null)
@@ -180,9 +165,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // 💾 ระบบเซฟและโหลด (สมบูรณ์แบบ: ตัว+กระเป๋า+เควส)
-    // ==========================================
     public void SaveGame(int slotNumber)
     {
         if (PlayerPrefs.HasKey("SaveSlot_" + slotNumber))
@@ -199,7 +181,6 @@ public class GameManager : MonoBehaviour
 
         SaveData data = new SaveData();
 
-        // 1. เซฟสเตตัสผู้เล่น
         if (PlayerController.instance != null)
         {
             data.playerPosX = PlayerController.instance.transform.position.x;
@@ -209,7 +190,6 @@ public class GameManager : MonoBehaviour
             data.money = PlayerController.instance.currentMoney;
         }
 
-        // 2. ⭐ เซฟกระเป๋าไอเทม
         if (Inventory.instance != null)
         {
             foreach (var slot in Inventory.instance.items)
@@ -221,17 +201,15 @@ public class GameManager : MonoBehaviour
                 }
                 else
                 {
-                    data.inventoryItemNames.Add(""); // ถ้าช่องว่าง เซฟค่าว่าง
+                    data.inventoryItemNames.Add("");
                     data.inventoryItemAmounts.Add(0);
                 }
             }
         }
 
-        // 3. ⭐ เซฟสถานะเควส (หา DualNPC ทั้งหมดเผื่อมีหลายตัว)
         DualNPC[] allNPCs = FindObjectsByType<DualNPC>(FindObjectsSortMode.None);
         if (allNPCs.Length > 0)
         {
-            // (สมมติว่าตอนนี้มี NPC เนื้อเรื่องหลักแค่ตัวเดียวก่อน)
             DualNPC mainNPC = allNPCs[0];
             data.currentQuestIndex = mainNPC.currentQuestIndex;
             if (mainNPC.currentQuestIndex < mainNPC.quests.Count)
@@ -260,7 +238,6 @@ public class GameManager : MonoBehaviour
             string json = PlayerPrefs.GetString("SaveSlot_" + slotNumber);
             SaveData data = JsonUtility.FromJson<SaveData>(json);
 
-            // 1. โหลดสเตตัสผู้เล่น
             if (PlayerController.instance != null)
             {
                 PlayerController.instance.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
@@ -273,11 +250,10 @@ public class GameManager : MonoBehaviour
                 PlayerController.instance.UpdateUI();
             }
 
-            // 2. ⭐ โหลดกระเป๋าไอเทม
             if (Inventory.instance != null)
             {
                 Inventory.instance.items.Clear();
-                Inventory.instance.Unequip(); // เอามือลงก่อนกันบั๊กของค้าง
+                Inventory.instance.Unequip();
 
                 for (int i = 0; i < data.inventoryItemNames.Count; i++)
                 {
@@ -296,7 +272,6 @@ public class GameManager : MonoBehaviour
                     }
                 }
 
-                // เติมช่องว่างให้เต็มกระเป๋า 30 ช่อง
                 while (Inventory.instance.items.Count < Inventory.instance.space)
                     Inventory.instance.items.Add(null);
 
@@ -304,17 +279,14 @@ public class GameManager : MonoBehaviour
                     Inventory.instance.onItemChangedCallback.Invoke();
             }
 
-            // 3. ⭐ โหลดสถานะเควส
             DualNPC[] allNPCs = FindObjectsByType<DualNPC>(FindObjectsSortMode.None);
             if (allNPCs.Length > 0)
             {
                 DualNPC mainNPC = allNPCs[0];
                 mainNPC.currentQuestIndex = data.currentQuestIndex;
 
-                // รีเซ็ตเควสเก่าทั้งหมดก่อน
                 foreach (var q in mainNPC.quests) { q.hasAccepted = false; q.isCompleted = false; q.hasGreetedThisQuest = false; }
 
-                // ติ๊กผ่านเควสที่เคยทำเสร็จแล้ว
                 for (int i = 0; i < data.currentQuestIndex; i++)
                 {
                     mainNPC.quests[i].isCompleted = true;
@@ -322,13 +294,15 @@ public class GameManager : MonoBehaviour
                     mainNPC.quests[i].hasGreetedThisQuest = true;
                 }
 
-                // โหลดสถานะเควสปัจจุบัน (ว่ากดรับหรือยัง)
                 if (data.currentQuestIndex < mainNPC.quests.Count)
                 {
                     mainNPC.quests[data.currentQuestIndex].hasAccepted = data.isCurrentQuestAccepted;
                     if (data.isCurrentQuestAccepted)
                         mainNPC.quests[data.currentQuestIndex].hasGreetedThisQuest = true;
                 }
+
+                // ⭐ จุดไคลแมกซ์: เรียกอัปเดตบอสทันทีหลังโหลดข้อมูลเควสเสร็จ!
+                mainNPC.SyncBossState();
             }
 
             Debug.Log($"📂 โหลดเกมช่อง {slotNumber} สำเร็จ! (ดึงกระเป๋าและเควสมาแล้ว)");
@@ -340,9 +314,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // 🗑️ ระบบลบทิ้ง และอัปเดตหน้าต่างข้อความ UI
-    // ==========================================
     public void UpdateSaveUI()
     {
         for (int i = 0; i < slotTexts.Length; i++)

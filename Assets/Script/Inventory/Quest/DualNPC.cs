@@ -55,7 +55,6 @@ public class DualNPC : MonoBehaviour
     public List<QuestData> quests = new List<QuestData>();
     public int currentQuestIndex = 0;
 
-    // ⭐ [เพิ่มใหม่] ช่องสำหรับใส่ OB บอส
     [Header("Boss Settings (Endgame)")]
     public GameObject bossPlaceholder;
 
@@ -83,8 +82,8 @@ public class DualNPC : MonoBehaviour
         if (dialoguePanel != null) dialoguePanel.SetActive(false);
         if (allQuestsDoneUI != null) allQuestsDoneUI.SetActive(false);
 
-        // ⭐ ซ่อนบอสไว้ก่อนตอนเริ่มเกม (กันมันโผล่มาก่อนกำหนด)
-        if (bossPlaceholder != null) bossPlaceholder.SetActive(false);
+        // ⭐ ซิงค์สถานะบอสทันทีตอนเริ่มเกม
+        SyncBossState();
 
         if (shopButton != null)
         {
@@ -121,6 +120,23 @@ public class DualNPC : MonoBehaviour
         }
     }
 
+    // ⭐ [เพิ่มใหม่] ฟังก์ชันสำหรับเช็คว่าต้องเปิดหรือปิดบอส
+    public void SyncBossState()
+    {
+        if (bossPlaceholder != null)
+        {
+            if (currentQuestIndex >= quests.Count)
+            {
+                bossPlaceholder.SetActive(true); // เควสครบ เปิดบอส
+                Debug.Log("🔥 เควสหมดแล้ว! ทำการเสก Boss Placeholder ออกมา!");
+            }
+            else
+            {
+                bossPlaceholder.SetActive(false); // เควสไม่ครบ ปิดบอส
+            }
+        }
+    }
+
     void StartDialogue()
     {
         isShowingUI = true;
@@ -149,7 +165,6 @@ public class DualNPC : MonoBehaviour
     IEnumerator TypeDialogueCoroutine(string textToType, bool isGreeting, bool skipTyping = false)
     {
         string fullText = textToType;
-
         yield return new WaitForSeconds(0.1f);
 
         if (dialogueText != null)
@@ -162,11 +177,9 @@ public class DualNPC : MonoBehaviour
             else
             {
                 dialogueText.text = "";
-
                 foreach (char letter in fullText.ToCharArray())
                 {
                     dialogueText.text += letter;
-
                     if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space))
                     {
                         dialogueText.text = fullText;
@@ -174,14 +187,12 @@ public class DualNPC : MonoBehaviour
                         yield return new WaitForSeconds(0.2f);
                         break;
                     }
-
                     yield return new WaitForSeconds(typingSpeed);
                 }
             }
         }
 
         yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space));
-
         yield return new WaitForSeconds(0.1f);
 
         if (isGreeting)
@@ -202,7 +213,6 @@ public class DualNPC : MonoBehaviour
     IEnumerator ForceRefreshUI()
     {
         yield return new WaitForEndOfFrame();
-
         if (dialogueText != null)
         {
             dialogueText.ForceMeshUpdate();
@@ -263,7 +273,6 @@ public class DualNPC : MonoBehaviour
         if (!currentQuest.hasAccepted)
         {
             currentQuest.hasAccepted = true;
-
             currentQuest.onQuestAccepted?.Invoke();
 
             if (typingCoroutine != null) StopCoroutine(typingCoroutine);
@@ -321,19 +330,14 @@ public class DualNPC : MonoBehaviour
 
         currentQuestIndex++;
 
-        // ⭐ ตรวจสอบว่าทำเควสเสร็จครบทุกเควสแล้วหรือยัง
         if (currentQuestIndex >= quests.Count)
         {
             if (allQuestsDoneUI != null)
                 allQuestsDoneUI.SetActive(true);
-
-            // ⭐ [สั่งเปิดตัวบอส] เมื่อเควสหมด ให้เปิดการทำงานของ OB บอสทันที!
-            if (bossPlaceholder != null)
-            {
-                bossPlaceholder.SetActive(true);
-                Debug.Log("🔥 เควสหมดแล้ว! ทำการเสก Boss Placeholder ออกมา!");
-            }
         }
+
+        // ⭐ อัปเดตสถานะบอสใหม่ทุกครั้งที่ส่งเควส
+        SyncBossState();
 
         if (typingCoroutine != null) StopCoroutine(typingCoroutine);
         typingCoroutine = StartCoroutine(TypeDialogueCoroutine(quest.questSuccessDialogue, false));

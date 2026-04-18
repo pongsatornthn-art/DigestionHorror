@@ -538,16 +538,26 @@ public class PlayerController : MonoBehaviour
     public void DealDamage()
     {
         if (attackPoint == null || currentActiveHolder == null || currentWeapon == null) return;
+
         float zAngle = currentActiveHolder.transform.eulerAngles.z;
         Collider2D[] hitEnemies = Physics2D.OverlapBoxAll(attackPoint.position, attackBoxSize, zAngle, enemyLayers);
         float currentKnockback = (pendingDamage == currentWeapon.damage) ? currentWeapon.knockback : currentWeapon.heavyKnockback;
+
         foreach (Collider2D enemy in hitEnemies)
         {
+            // 1. ตีมอนสเตอร์ปกติ
             EnemyStats enemyStats = enemy.GetComponent<EnemyStats>();
             if (enemyStats != null)
             {
                 Vector2 knockbackDir = (enemy.transform.position - transform.position).normalized;
                 enemyStats.TakeDamage(pendingDamage, currentKnockback, knockbackDir);
+            }
+
+            // 2. ⭐ ตีไม้ขวางทาง (ส่วนที่เพิ่มเข้ามา)
+            WoodenObstacle obstacle = enemy.GetComponent<WoodenObstacle>();
+            if (obstacle != null)
+            {
+                obstacle.HitObstacle(pendingDamage, currentWeapon);
             }
         }
     }

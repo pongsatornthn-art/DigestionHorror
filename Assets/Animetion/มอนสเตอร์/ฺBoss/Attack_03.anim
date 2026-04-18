@@ -181,6 +181,13 @@ AnimationClip:
     floatParameter: 0
     intParameter: 0
     messageOptions: 0
+  - time: 0.56666666
+    functionName: PlaySwingSound
+    data: Both
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
   - time: 0.65
     functionName: DisableDamage
     data: Left
@@ -198,6 +205,13 @@ AnimationClip:
   - time: 1.5
     functionName: PlaySwingSound(string)
     data: Left
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1.6333333
+    functionName: PlaySwingSound
+    data: Both
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
     intParameter: 0
