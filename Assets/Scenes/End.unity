@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 32590739}
   - component: {fileID: 32590738}
+  - component: {fileID: 32590740}
   m_Layer: 0
   m_Name: Video Player
   m_TagString: Untagged
@@ -144,7 +145,7 @@ VideoPlayer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 32590737}
   m_Enabled: 1
-  m_VideoClip: {fileID: 32900000, guid: ed7e6a52ab239484ea4f88276acdefdc, type: 3}
+  m_VideoClip: {fileID: 32900000, guid: 48c0af45e01093848ab7e06a22358b7c, type: 3}
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 1046204976}
@@ -187,6 +188,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &32590740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 32590737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f41acac587d920447bbdb9346e37f310, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ReturnToMenu
+  menuSceneName: Menu
 --- !u!1 &1046204974
 GameObject:
   m_ObjectHideFlags: 0

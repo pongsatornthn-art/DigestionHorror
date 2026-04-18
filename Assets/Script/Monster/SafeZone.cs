@@ -16,7 +16,7 @@ public class SafeZone : MonoBehaviour
                 DigestionSystem.instance.DecreaseDigestion(reduceAmountPerSec * Time.deltaTime);
 
                 // ⭐ โค้ดจับโกหก: มันจะปริ้นบอกรัวๆ ว่ากำลังลดค่าของออบเจกต์ชื่ออะไรอยู่!
-                Debug.Log($"[SafeZone] กำลังลดค่า! ตอนนี้ Digestion เหลือ: {DigestionSystem.instance.currentDigestion:F1} (ลดที่ออบเจกต์ชื่อ: {DigestionSystem.instance.gameObject.name})");
+                //Debug.Log($"[SafeZone] กำลังลดค่า! ตอนนี้ Digestion เหลือ: {DigestionSystem.instance.currentDigestion:F1} (ลดที่ออบเจกต์ชื่อ: {DigestionSystem.instance.gameObject.name})");
             }
             else
             {

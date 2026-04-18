@@ -154,11 +154,6 @@ public class InventoryUI : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha2)) SelectHotbarSlot(1);
         if (Input.GetKeyDown(KeyCode.Alpha3)) SelectHotbarSlot(2);
         if (Input.GetKeyDown(KeyCode.Alpha4)) SelectHotbarSlot(3);
-        if (Input.GetKeyDown(KeyCode.Alpha5)) SelectHotbarSlot(4);
-        if (Input.GetKeyDown(KeyCode.Alpha6)) SelectHotbarSlot(5);
-        if (Input.GetKeyDown(KeyCode.Alpha7)) SelectHotbarSlot(6);
-        if (Input.GetKeyDown(KeyCode.Alpha8)) SelectHotbarSlot(7);
-        if (Input.GetKeyDown(KeyCode.Alpha9)) SelectHotbarSlot(8);
     }
 
     void SelectHotbarSlot(int index)

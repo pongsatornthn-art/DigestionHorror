@@ -22,12 +22,12 @@ MonoBehaviour:
   equippedSprite: {fileID: 5921444538186595469, guid: 699a819c16b5da44da2c21a02ba70c69, type: 3}
   weaponAnimatorOverride: {fileID: 22100000, guid: ec7740c7892b46b4fbd8b2bd7c514a7a, type: 2}
   weaponID: 0
-  damage: 10
-  staminaCost: 0
+  damage: 5
+  staminaCost: 2
   knockback: 3
   lightAttackCooldown: 0.5
-  heavyDamage: 20
-  heavyStaminaCost: 0
+  heavyDamage: 10
+  heavyStaminaCost: 4
   heavyKnockback: 5
   heavyAttackCooldown: 1
   maxDurability: 10000
@@ -35,3 +35,6 @@ MonoBehaviour:
   digestionReduceAmount: 20
   digestionSlowMultiplier: 0.5
   totemEffectDuration: 60
+  causesBleeding: 0
+  bleedDuration: 10
+  bleedDamagePerSec: 2

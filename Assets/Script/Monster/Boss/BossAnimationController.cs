@@ -15,7 +15,8 @@ public class BossAnimationController : MonoBehaviour
     // ฟังก์ชันสำหรับเล่นเสียง (เรียกจาก Animation Event)
     public void PlaySwingSound(string hand)
     {
-        if (audioSource == null) return;
+        // 🛡️ เพิ่มการเช็คความปลอดภัย
+        if (audioSource == null || this == null) return;
 
         if (hand == "Left" && leftHandSwingSound != null)
         {

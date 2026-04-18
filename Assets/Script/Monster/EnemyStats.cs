@@ -1,59 +1,65 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class EnemyStats : MonoBehaviour
 {
     public int hp = 100;
+    private int maxHp;
     public int damageToPlayer = 10;
+
+    // ⭐ ตัวแปรใหม่: เช็คว่าตัวนี้ตายไปหรือยัง จะได้ไม่รันโค้ดซ้ำ
+    private bool isDead = false;
+
+    // ==========================================
+    // 👑 Boss Settings
+    // ==========================================
+    [Header("👑 Boss Settings")]
+    public bool isBoss = false;
+    public Slider bossHealthBar;
+    public float showHealthBarDistance = 15f;
+    public string endGameSceneName = "End";
+    public AudioClip bossDieSound;
+    private Transform playerTransform;
 
     [Header("Drop System (ไอเทม)")]
     public GameObject lootBoxPrefab;
     public float boxDestroyTime = 10f;
 
-    // ==========================================
-    // ⭐ ส่วนที่เพิ่มใหม่: ระบบดรอปเงิน (Orbs)
-    // ==========================================
     [Header("Drop Money (เงิน Orbs)")]
-    public int minMoneyDrop = 5;  // สุ่มดรอปขั้นต่ำ
-    public int maxMoneyDrop = 20; // สุ่มดรอปสูงสุด
+    public int minMoneyDrop = 5;
+    public int maxMoneyDrop = 20;
 
-    [Header("Visual Feedback (ตอนโดนตี)")]
+    [Header("Visual Feedback")]
     public Color flashColor = Color.white;
     public float flashDuration = 0.1f;
 
-    // ==========================================
-    // ⭐ ระบบเลือดไหล (Bleeding) ของเพื่อน
-    // ==========================================
-    [Header("Bleeding System (ระบบเลือดไหล)")]
+    [Header("Bleeding System")]
     public Color bleedFlashColor = Color.red;
-    public GameObject bleedVisualEffect; // ลาก GameObject ภาพหยดเลือดมาใส่ช่องนี้
-
-    [Header("Bleed Icon Settings (ตั้งค่าไอคอน)")]
-    public Vector2 bleedIconOffset = new Vector2(0.5f, 0.5f); // ระยะห่างจากจุดศูนย์กลางมอนสเตอร์
-    public float bleedIconScale = 1f; // ปรับขนาดไอคอน
+    public GameObject bleedVisualEffect;
+    public Vector2 bleedIconOffset = new Vector2(0.5f, 0.5f);
+    public float bleedIconScale = 1f;
 
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
     private Coroutine flashCoroutine;
     private Coroutine bleedCoroutine;
-
     private Rigidbody2D rb;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        maxHp = hp;
 
-        if (spriteRenderer != null)
-        {
-            originalColor = spriteRenderer.color;
-        }
-        else
-        {
-            Debug.LogError(name + " ไม่มี SpriteRenderer แปะอยู่! ระบบตัวขาวจะทำงานไม่ได้");
-        }
+        if (spriteRenderer != null) originalColor = spriteRenderer.color;
+        rb = GetComponent<Rigidbody2D>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        maxHp = hp;
 
-        // ⭐ โค้ดสร้างโคลนภาพเลือดตอนมอนสเตอร์เกิด
+        if (spriteRenderer != null) originalColor = spriteRenderer.color;
+
         if (bleedVisualEffect != null)
         {
             GameObject bleedClone = Instantiate(bleedVisualEffect);
@@ -61,14 +67,46 @@ public class EnemyStats : MonoBehaviour
             bleedClone.transform.localPosition = new Vector3(bleedIconOffset.x, bleedIconOffset.y, 0f);
             bleedClone.transform.localScale = Vector3.one * bleedIconScale;
             bleedClone.SetActive(false);
-            bleedVisualEffect = bleedClone; // จำตัวโคลนไว้ใช้แทน
+            bleedVisualEffect = bleedClone;
+        }
+        if (isBoss)
+        {
+            if (bossHealthBar != null)
+            {
+                // ⭐ เพิ่มบรรทัดนี้: บังคับให้หลอดเลือดมีค่าเต็ม 100% ตอนเริ่มเกม
+                bossHealthBar.value = 1f;
+
+                bossHealthBar.gameObject.SetActive(false);
+            }
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null) playerTransform = player.transform;
+        }
+    }
+
+    void Update()
+    {
+        // ถ้าตายแล้ว ไม่ต้องโชว์หลอดเลือด
+        if (isDead) return;
+
+        if (isBoss && playerTransform != null && bossHealthBar != null)
+        {
+            float distance = Vector2.Distance(transform.position, playerTransform.position);
+            bossHealthBar.gameObject.SetActive(distance <= showHealthBarDistance);
         }
     }
 
     public void TakeDamage(int damage, float knockbackForce, Vector2 knockbackDirection)
     {
+        // ถ้าตายแล้ว ไม่ต้องรับดาเมจอีก
+        if (isDead) return;
+
         hp -= damage;
         Debug.Log(name + " เลือดเหลือ " + hp);
+
+        if (isBoss && bossHealthBar != null)
+        {
+            bossHealthBar.value = (float)hp / maxHp;
+        }
 
         StartFlashEffect();
 
@@ -77,14 +115,18 @@ public class EnemyStats : MonoBehaviour
             rb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
         }
 
-        if (hp <= 0) Die();
+        // เช็คว่าเลือดหมดหรือยัง
+        if (hp <= 0)
+        {
+            isDead = true; // ล็อคสถานะว่าตายแล้ว
+            Die();
+        }
     }
 
-    // ==========================================
-    // ⭐ ฟังก์ชันติดสถานะเลือดไหล (โดนเรียกจาก WeaponAttack)
-    // ==========================================
+    // ระบบเลือดไหล
     public void ApplyBleed(float duration, float damagePerSec)
     {
+        if (isDead) return;
         if (bleedCoroutine != null) StopCoroutine(bleedCoroutine);
         bleedCoroutine = StartCoroutine(BleedRoutine(duration, damagePerSec));
     }
@@ -92,24 +134,20 @@ public class EnemyStats : MonoBehaviour
     private System.Collections.IEnumerator BleedRoutine(float duration, float damagePerSec)
     {
         if (bleedVisualEffect != null) bleedVisualEffect.SetActive(true);
-
         float timer = 0f;
-        while (timer < duration)
+        while (timer < duration && !isDead)
         {
             yield return new WaitForSeconds(1f);
-            // สั่งลดเลือด (แปลง float เป็น int) แบบไม่กระเด็น
             TakeDamage((int)damagePerSec, 0f, Vector2.zero);
             timer += 1f;
         }
-
         if (bleedVisualEffect != null) bleedVisualEffect.SetActive(false);
         bleedCoroutine = null;
     }
-    // ==========================================
 
     void StartFlashEffect()
     {
-        if (spriteRenderer == null) return;
+        if (spriteRenderer == null || isDead) return;
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
         flashCoroutine = StartCoroutine(FlashRoutine());
     }
@@ -124,42 +162,80 @@ public class EnemyStats : MonoBehaviour
 
     void Die()
     {
-        // 1. ดรอปกล่องไอเทม
+        if (isBoss)
+        {
+            Debug.Log("👑 บอสตายแล้ว! รอ 5 วินาที...");
+            // เรียกฟังก์ชันหน่วงเวลา 5 วิ
+            StartCoroutine(BossDeathRoutine());
+            return;
+        }
+
+        // สำหรับมอนสเตอร์ทั่วไป
         if (lootBoxPrefab != null)
         {
             GameObject droppedBox = Instantiate(lootBoxPrefab, transform.position, Quaternion.identity);
-            Debug.Log(name + " ดรอปกล่องแล้ว!");
             Destroy(droppedBox, boxDestroyTime);
         }
 
-        // 2. ดรอปเงิน (Orbs) เข้าตัวผู้เล่น
         if (PlayerController.instance != null)
         {
             int droppedMoney = Random.Range(minMoneyDrop, maxMoneyDrop + 1);
-
             if (droppedMoney > 0)
             {
                 PlayerController.instance.currentMoney += droppedMoney;
                 PlayerController.instance.UpdateUI();
-                Debug.Log($"✨ {name} ตาย! ได้รับเงิน (Orbs): {droppedMoney} | เงินรวม: {PlayerController.instance.currentMoney}");
             }
         }
 
         Destroy(gameObject);
     }
 
+    // ⭐ ฟังก์ชันสำหรับหน่วงเวลา 5 วินาทีก่อนวาร์ป
+    // ⭐ ฟังก์ชันสำหรับหน่วงเวลา 5 วินาทีก่อนวาร์ป
+    IEnumerator BossDeathRoutine()
+    {
+        Debug.Log("👑 บอสตายแล้ว! กำลังหยุดสคริปต์โจมตีและรอวาร์ป...");
+
+        // 1. ⭐ สั่งปิดสคริปต์สุ่มโจมตี (BossAttackRandomizer) ทันที
+        BossAttackRandomizer attackScript = GetComponent<BossAttackRandomizer>();
+        if (attackScript != null)
+        {
+            attackScript.enabled = false; // ปิดการทำงานของสคริปต์
+            attackScript.StopAllCoroutines(); // สั่งให้หยุด Coroutine การตีที่ค้างอยู่ทั้งหมด
+        }
+
+        // 2. ปิดภาพ (Sprite) ทั้งตัวแม่และตัวลูก
+        SpriteRenderer[] allSprites = GetComponentsInChildren<SpriteRenderer>();
+        foreach (SpriteRenderer sr in allSprites) sr.enabled = false;
+
+        // 3. ปิดการชน (Collider) ทั้งตัวแม่และตัวลูก
+        Collider2D[] allColliders = GetComponentsInChildren<Collider2D>();
+        foreach (Collider2D col in allColliders) col.enabled = false;
+
+        // 4. หยุดฟิสิกส์และหลอดเลือด
+        if (rb != null) { rb.linearVelocity = Vector2.zero; rb.simulated = false; }
+        if (bossHealthBar != null) bossHealthBar.gameObject.SetActive(false);
+        if (bossDieSound != null) AudioSource.PlayClipAtPoint(bossDieSound, transform.position);
+
+        // ⏳ 5. รอนับถอยหลัง 5 วินาที
+        yield return new WaitForSeconds(5f);
+
+        // 6. วาร์ปไปหน้าจบเกม
+        SceneManager.LoadScene(endGameSceneName);
+    }
+
     void OnCollisionEnter2D(Collision2D collision)
     {
+        if (isDead) return; // ถ้าตายแล้ว ไม่ต้องทำดาเมจใส่ผู้เล่น
+
         if (collision.gameObject.CompareTag("Player"))
         {
             PlayerController player = collision.gameObject.GetComponent<PlayerController>();
             if (player != null)
             {
                 player.PlayerTakeDamage(damageToPlayer);
-
                 Vector2 knockbackDir = (collision.transform.position - transform.position).normalized;
-                float force = 10f;
-                player.ApplyKnockback(knockbackDir * force);
+                player.ApplyKnockback(knockbackDir * 10f);
             }
         }
     }

@@ -14,26 +14,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LootTable
   potentialLoot:
   - item: {fileID: 11400000, guid: b37fa6b0224bffd489032cb1411084a6, type: 2}
-    dropChance: 50
+    dropChance: 25
     minAmount: 1
-    maxAmount: 3
+    maxAmount: 2
   - item: {fileID: 11400000, guid: d252963936d6d8b4f9a6854b8505e7a4, type: 2}
-    dropChance: 50
+    dropChance: 25
     minAmount: 1
-    maxAmount: 3
+    maxAmount: 2
   - item: {fileID: 11400000, guid: 3bde0f495e4911f49b917e926379abb3, type: 2}
-    dropChance: 50
+    dropChance: 25
     minAmount: 1
-    maxAmount: 3
+    maxAmount: 2
   - item: {fileID: 11400000, guid: c3e3da8ea4957c6489f2e7e473328983, type: 2}
-    dropChance: 50
+    dropChance: 25
     minAmount: 1
-    maxAmount: 3
+    maxAmount: 2
   - item: {fileID: 11400000, guid: 809a345bdb40a1a45a71379143d55418, type: 2}
-    dropChance: 50
+    dropChance: 25
     minAmount: 1
-    maxAmount: 3
+    maxAmount: 2
   - item: {fileID: 11400000, guid: 214c536721031cc43ad86d7e956ffc3f, type: 2}
-    dropChance: 50
+    dropChance: 25
     minAmount: 1
-    maxAmount: 3
+    maxAmount: 2

@@ -127,14 +127,14 @@ AnimationClip:
   m_Events:
   - time: 0.6666667
     functionName: EnableDamage
-    data: Left
+    data: Both
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
     intParameter: 0
     messageOptions: 0
-  - time: 0.6666667
-    functionName: PlaySwingSound(string)
-    data: Left
+  - time: 1
+    functionName: PlaySwingSound
+    data: Both
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
     intParameter: 0

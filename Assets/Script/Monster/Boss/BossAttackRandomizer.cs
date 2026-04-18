@@ -40,13 +40,23 @@ public class BossAttackRandomizer : MonoBehaviour
             float delay = Random.Range(minAttackDelay, maxAttackDelay);
             yield return new WaitForSeconds(delay);
 
-            if (GetComponent<AudioSource>() != null)
-                GetComponent<AudioSource>().Play();
+            // 🛡️ เพิ่มบรรทัดนี้เพื่อเช็คก่อนว่าบอสยังไม่ตาย
+            if (this == null) yield break;
+
+            // เช็คลำโพงก่อนสั่งเล่นเสียง
+            AudioSource source = GetComponent<AudioSource>();
+            if (source != null)
+            {
+                source.Play();
+            }
 
             int randomIndex = Random.Range(0, attackTriggers.Length);
             string selectedTrigger = attackTriggers[randomIndex];
 
-            animator.SetTrigger(selectedTrigger);
+            if (animator != null)
+            {
+                animator.SetTrigger(selectedTrigger);
+            }
         }
     }
 }
