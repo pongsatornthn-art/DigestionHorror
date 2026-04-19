@@ -31,8 +31,9 @@ MonoBehaviour:
   heavyKnockback: 6
   heavyAttackCooldown: 1.2
   maxDurability: 1000
-  price: 50
+  price: 550
   digestionReduceAmount: 20
+  healAmount: 50
   digestionSlowMultiplier: 0.5
   totemEffectDuration: 60
   causesBleeding: 1

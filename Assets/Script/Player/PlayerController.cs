@@ -369,8 +369,14 @@ public class PlayerController : MonoBehaviour
         }
 
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
-        this.enabled = false;
-        Time.timeScale = 0f;
+
+        // ⭐ หยุดความเร็วของตัวละคร เพื่อไม่ให้ศพไถลไปกับพื้น
+        if (rb != null) rb.linearVelocity = Vector2.zero;
+
+        this.enabled = false; // ปิดการควบคุมผู้เล่น
+
+        // ⭐ ลบ Time.timeScale = 0f; ออกไปแล้ว 
+        // ทำให้เวลาในเกมยังเดินปกติ มอนสเตอร์ยังขยับได้!
     }
 
     public void RestartGame()
