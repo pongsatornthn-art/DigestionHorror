@@ -18,9 +18,17 @@ public class RowanThoughts : MonoBehaviour
     public int requiredAmount = 1;
 
     [Header("ป้องกันการข้ามเนื้อเรื่อง (ล็อกเควส)")]
-    public DualNPC questNPC; // ⭐ ลากตัว NPC พ่อค้ามาใส่ตรงนี้
-    [Tooltip("ใส่ลำดับเควสที่ต้องการให้ข้อความนี้ทำงาน (Quest 1 ใส่ 0, Quest 2 ใส่ 1)")]
-    public int requiredQuestIndex = -1; // ⭐ ถ้าเป็น -1 คือไม่เช็คเควส ปล่อยผ่านเลย
+    public DualNPC questNPC;
+    [Tooltip("ใส่ลำดับเควสที่ต้องการให้ข้อความนี้ทำงาน (Quest 1 ใส่ 0) / ถ้าใส่ -1 คือปล่อยผ่าน")]
+    public int requiredQuestIndex = -1;
+
+    // ⭐ เพิ่มฟีเจอร์ใหม่: เล่นก่อนรับเควส
+    [Tooltip("ถ้าติ๊กถูก: ข้อความจะโชว์ 'ก่อน' ที่จะกดรับเควสนี้ (พอรับเควสแล้วจะไม่พูดอีก)")]
+    public bool playBeforeQuest = false;
+
+    [Header("🔥 โหมดเผชิญหน้าบอส (Boss Phase)")]
+    [Tooltip("ถ้าติ๊กถูก ข้อความนี้จะเด้งก็ต่อเมื่อ ส่งเควสครบทุกอัน และบอสปรากฏตัวแล้วเท่านั้น!")]
+    public bool requireBossActive = false;
 
     [Header("เหตุการณ์ต่อเนื่อง (เมื่อพูดจบ)")]
     public UnityEvent onThoughtFinished;
@@ -31,30 +39,64 @@ public class RowanThoughts : MonoBehaviour
     {
         if (other.CompareTag("Player") && !hasTriggered)
         {
-            // ⭐ 1. เช็คระบบเควส (ป้องกันการข้ามเนื้อเรื่อง)
-            if (questNPC != null && requiredQuestIndex >= 0)
-            {
-                // ถ้าคิวเควสยังไม่ถึง หรือ "ยังไม่ได้กดคุยรับเควสนั้น" จาก NPC -> ให้เงียบไว้!
-                if (questNPC.currentQuestIndex != requiredQuestIndex ||
-                    !questNPC.quests[requiredQuestIndex].hasAccepted)
-                {
-                    return; // ปล่อยให้ผู้เล่นเดินผ่านไปแบบงงๆ (ไม่พูด)
-                }
-            }
+            CheckAndPlayThought();
+        }
+    }
 
-            // ⭐ 2. เช็คระบบไอเทม
-            if (requiredItem != null)
+    public void PlayThoughtNow()
+    {
+        if (!hasTriggered)
+        {
+            CheckAndPlayThought();
+        }
+    }
+
+    private void CheckAndPlayThought()
+    {
+        // 1. โหมดบอส
+        if (requireBossActive && questNPC != null)
+        {
+            if (questNPC.currentQuestIndex < questNPC.quests.Count)
             {
-                if (Inventory.instance == null || !Inventory.instance.HasItem(requiredItem, requiredAmount))
+                return;
+            }
+        }
+        // 2. โหมดอิงตามเควส
+        else if (questNPC != null && requiredQuestIndex >= 0)
+        {
+            if (playBeforeQuest)
+            {
+                // ⭐ โหมดใหม่: ให้พูด "ก่อน" รับเควส
+                // ถ้าเลยเควสนั้นไปแล้ว หรือ รับเควสนั้นไปแล้ว -> ให้เงียบ
+                if (questNPC.currentQuestIndex > requiredQuestIndex ||
+                   (questNPC.currentQuestIndex == requiredQuestIndex && questNPC.quests[requiredQuestIndex].hasAccepted))
                 {
                     return;
                 }
             }
-
-            // ผ่านทุกเงื่อนไข (ถึงคิวเควสแล้ว + ของครบแล้ว) ลุยเลย!
-            hasTriggered = true;
-            StartCoroutine(ShowThoughtCoroutine());
+            else
+            {
+                // โหมดเดิม: ให้พูด "ระหว่าง" ทำเควส
+                if (questNPC.currentQuestIndex != requiredQuestIndex ||
+                    !questNPC.quests[requiredQuestIndex].hasAccepted)
+                {
+                    return;
+                }
+            }
         }
+
+        // 3. เช็คระบบไอเทม
+        if (requiredItem != null)
+        {
+            if (Inventory.instance == null || !Inventory.instance.HasItem(requiredItem, requiredAmount))
+            {
+                return;
+            }
+        }
+
+        // ลุยโชว์ข้อความ!
+        hasTriggered = true;
+        StartCoroutine(ShowThoughtCoroutine());
     }
 
     IEnumerator ShowThoughtCoroutine()

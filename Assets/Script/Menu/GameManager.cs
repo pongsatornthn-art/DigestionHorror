@@ -18,6 +18,9 @@ public class SaveData
 
     public int currentQuestIndex;
     public bool isCurrentQuestAccepted;
+
+    // ⭐ เพิ่มตรงนี้: ลิสต์สำหรับจำว่าหน้าสมุดไหนถูกปลดล็อกแล้วบ้าง
+    public List<bool> unlockedBookPages = new List<bool>();
 }
 
 public class GameManager : MonoBehaviour
@@ -218,6 +221,12 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        // ⭐ บันทึกข้อมูลสมุด
+        if (BookUI.instance != null)
+        {
+            data.unlockedBookPages = new List<bool>(BookUI.instance.unlockedPages);
+        }
+
         string json = JsonUtility.ToJson(data);
         PlayerPrefs.SetString("SaveSlot_" + slotNumber, json);
 
@@ -225,7 +234,7 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.SetInt("SaveCount", currentSaveCount);
         PlayerPrefs.Save();
 
-        Debug.Log($"✅ เซฟเกมลงช่อง {slotNumber} สำเร็จ! (รวมกระเป๋าและเควส)");
+        Debug.Log($"✅ เซฟเกมลงช่อง {slotNumber} สำเร็จ! (รวมกระเป๋า เควส และสมุด)");
 
         UpdateSaveUI();
         ShowLoadMenu();
@@ -301,11 +310,22 @@ public class GameManager : MonoBehaviour
                         mainNPC.quests[data.currentQuestIndex].hasGreetedThisQuest = true;
                 }
 
-                // ⭐ จุดไคลแมกซ์: เรียกอัปเดตบอสทันทีหลังโหลดข้อมูลเควสเสร็จ!
                 mainNPC.SyncBossState();
             }
 
-            Debug.Log($"📂 โหลดเกมช่อง {slotNumber} สำเร็จ! (ดึงกระเป๋าและเควสมาแล้ว)");
+            // ⭐ โหลดข้อมูลหน้าสมุดกลับมา
+            if (BookUI.instance != null && data.unlockedBookPages != null && data.unlockedBookPages.Count > 0)
+            {
+                BookUI.instance.unlockedPages = new List<bool>(data.unlockedBookPages);
+
+                // กันเหนียว: ให้แน่ใจว่าหน้าแรกสุดปลดล็อกอยู่เสมอ
+                if (BookUI.instance.unlockedPages.Count > 0)
+                {
+                    BookUI.instance.unlockedPages[0] = true;
+                }
+            }
+
+            Debug.Log($"📂 โหลดเกมช่อง {slotNumber} สำเร็จ! (ดึงกระเป๋า เควส และสมุดมาแล้ว)");
             ResumeGame();
         }
         else

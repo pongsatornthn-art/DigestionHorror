@@ -578,14 +578,34 @@ public class PlayerController : MonoBehaviour
         return null;
     }
 
+    // เปลี่ยนฟังก์ชัน ConsumeItem เดิมให้มาเรียกใช้ของใหม่
     void ConsumeItem()
     {
-        if (currentWeapon == null || currentWeapon.itemType != ItemType.Consumable) return;
+        UseConsumableDirectly(currentWeapon);
+    }
 
-        if (DigestionSystem.instance != null) DigestionSystem.instance.DecreaseDigestion(currentWeapon.digestionReduceAmount);
-        if (Inventory.instance != null) Inventory.instance.RemoveItem(currentWeapon);
+    // ⭐ เพิ่มฟังก์ชันนี้เข้ามาใหม่ สำหรับให้ Hotbar สั่งดื่มยาได้ทันที!
+    public void UseConsumableDirectly(ItemData consumableItem)
+    {
+        if (consumableItem == null || consumableItem.itemType != ItemType.Consumable) return;
 
-        EquipWeapon(null);
+        // 1. ระบบฮีลเลือด
+        if (consumableItem.healAmount > 0)
+        {
+            currentHealth += consumableItem.healAmount;
+            if (currentHealth > maxHealth) currentHealth = maxHealth;
+            UpdateUI();
+            Debug.Log("ดื่มยา! ฟื้นฟูเลือด: " + consumableItem.healAmount + " | เลือดปัจจุบัน: " + currentHealth);
+        }
+
+        // 2. ระบบลดความหิว
+        if (DigestionSystem.instance != null) DigestionSystem.instance.DecreaseDigestion(consumableItem.digestionReduceAmount);
+
+        // 3. ลบไอเทมออกจากกระเป๋า
+        if (Inventory.instance != null) Inventory.instance.RemoveItem(consumableItem);
+
+        // 4. ถ้าของที่กินไป คือของที่กำลังถืออยู่ในมือพอดี ก็ให้ถอดออกด้วย
+        if (currentWeapon == consumableItem) EquipWeapon(null);
     }
 
     void UseTotem()

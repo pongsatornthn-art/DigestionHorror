@@ -47,6 +47,7 @@ public class ItemData : ScriptableObject
 
     [Header("Consumable Stats (สำหรับ ยา/อาหาร)")]
     public float digestionReduceAmount = 20f;
+    public int healAmount = 50; // ⭐ เพิ่มช่องนี้: เอาไว้ตั้งค่าว่าไอเทมนี้ฮีลเลือดเท่าไหร่
 
     [Header("Totem Stats (สำหรับ โทเทม)")]
     public float digestionSlowMultiplier = 0.5f;
@@ -59,4 +60,5 @@ public class ItemData : ScriptableObject
     public bool causesBleeding = false; // ติ๊กถูกถ้าเป็นไม้ตะปู
     public float bleedDuration = 10f;   // ระยะเวลาเลือดไหล (10 วินาที)
     public int bleedDamagePerSec = 2;   // ดาเมจที่ลดลงทุกๆ 1 วินาที
+
 }

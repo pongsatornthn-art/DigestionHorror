@@ -22,6 +22,8 @@ public class DualNPC : MonoBehaviour
         [Header("ของรางวัล (เมื่อส่งเควสสำเร็จ)")]
         public ItemData rewardItem;
         public int rewardAmount = 1;
+
+        [Header("หน้าที่ต้องการปลดล็อก (ตอนส่งเควสสำเร็จ!)")] // ⭐
         public int pageToUnlock = 1;
 
         [Header("บทสนทนาประจำเควสนี้")]
@@ -82,7 +84,6 @@ public class DualNPC : MonoBehaviour
         if (dialoguePanel != null) dialoguePanel.SetActive(false);
         if (allQuestsDoneUI != null) allQuestsDoneUI.SetActive(false);
 
-        // ⭐ ซิงค์สถานะบอสทันทีตอนเริ่มเกม
         SyncBossState();
 
         if (shopButton != null)
@@ -120,19 +121,18 @@ public class DualNPC : MonoBehaviour
         }
     }
 
-    // ⭐ [เพิ่มใหม่] ฟังก์ชันสำหรับเช็คว่าต้องเปิดหรือปิดบอส
     public void SyncBossState()
     {
         if (bossPlaceholder != null)
         {
             if (currentQuestIndex >= quests.Count)
             {
-                bossPlaceholder.SetActive(true); // เควสครบ เปิดบอส
+                bossPlaceholder.SetActive(true);
                 Debug.Log("🔥 เควสหมดแล้ว! ทำการเสก Boss Placeholder ออกมา!");
             }
             else
             {
-                bossPlaceholder.SetActive(false); // เควสไม่ครบ ปิดบอส
+                bossPlaceholder.SetActive(false);
             }
         }
     }
@@ -275,6 +275,8 @@ public class DualNPC : MonoBehaviour
             currentQuest.hasAccepted = true;
             currentQuest.onQuestAccepted?.Invoke();
 
+            // ⭐ เอาการปลดล็อกสมุดออกจากตรงนี้แล้ว
+
             if (typingCoroutine != null) StopCoroutine(typingCoroutine);
             typingCoroutine = StartCoroutine(TypeDialogueCoroutine(currentQuest.questStartDialogue, false));
             return;
@@ -323,8 +325,12 @@ public class DualNPC : MonoBehaviour
             }
         }
 
+        // ⭐ ย้ายคำสั่งปลดล็อกสมุดกลับมาไว้ที่นี่! (ปลดล็อกตอนส่งเควสสำเร็จ)
         if (BookUI.instance != null)
+        {
             BookUI.instance.UnlockNewPage(quest.pageToUnlock);
+            Debug.Log("📖 ส่งเควสสำเร็จ! ปลดล็อกสมุดหน้าที่: " + quest.pageToUnlock + " แล้ว!");
+        }
 
         quest.onQuestCompleted?.Invoke();
 
@@ -336,7 +342,6 @@ public class DualNPC : MonoBehaviour
                 allQuestsDoneUI.SetActive(true);
         }
 
-        // ⭐ อัปเดตสถานะบอสใหม่ทุกครั้งที่ส่งเควส
         SyncBossState();
 
         if (typingCoroutine != null) StopCoroutine(typingCoroutine);

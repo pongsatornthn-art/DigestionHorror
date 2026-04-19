@@ -33,6 +33,7 @@ MonoBehaviour:
   maxDurability: 0
   price: 50
   digestionReduceAmount: 20
+  healAmount: 30
   digestionSlowMultiplier: 0.5
   totemEffectDuration: 60
   causesBleeding: 0
