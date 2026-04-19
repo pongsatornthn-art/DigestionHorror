@@ -9,7 +9,7 @@ public class EnemyStats : MonoBehaviour
     private int maxHp;
     public int damageToPlayer = 10;
 
-    // ⭐ ตัวแปรใหม่: เช็คว่าตัวนี้ตายไปหรือยัง จะได้ไม่รันโค้ดซ้ำ
+    // ⭐ เช็คว่าตัวนี้ตายไปหรือยัง จะได้ไม่รันโค้ดซ้ำ
     private bool isDead = false;
 
     // ==========================================
@@ -47,16 +47,18 @@ public class EnemyStats : MonoBehaviour
     private Coroutine bleedCoroutine;
     private Rigidbody2D rb;
 
+    // ⭐ 1. เพิ่มฟังก์ชัน Awake เข้ามา เพื่อให้จำเลือดสูงสุดทันทีที่เกิด!
+    void Awake()
+    {
+        maxHp = hp;
+    }
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        maxHp = hp;
 
-        if (spriteRenderer != null) originalColor = spriteRenderer.color;
-        rb = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        maxHp = hp;
+        // (เอา maxHp = hp; ออกจากตรงนี้ เพราะย้ายไปรันใน Awake ด้านบนแล้ว)
 
         if (spriteRenderer != null) originalColor = spriteRenderer.color;
 
@@ -73,15 +75,29 @@ public class EnemyStats : MonoBehaviour
         {
             if (bossHealthBar != null)
             {
-                // ⭐ เพิ่มบรรทัดนี้: บังคับให้หลอดเลือดมีค่าเต็ม 100% ตอนเริ่มเกม
                 bossHealthBar.value = 1f;
-
                 bossHealthBar.gameObject.SetActive(false);
             }
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null) playerTransform = player.transform;
         }
     }
+
+    // ==========================================
+    // ⭐ ฟังก์ชันสำหรับรีเซ็ตเลือด
+    // ==========================================
+    public void ResetHealth()
+    {
+        hp = maxHp; // ดึงค่าเลือดกลับมาเต็ม (ตอนนี้ maxHp จะไม่เป็น 0 แล้ว!)
+        isDead = false; // ปลดล็อคสถานะการตาย เพื่อให้บอสกลับมาสู้ต่อได้
+
+        // ถ้าเป็นบอส ให้สั่งอัปเดตหลอดเลือดให้เต็มหลอดด้วย
+        if (isBoss && bossHealthBar != null)
+        {
+            bossHealthBar.value = 1f;
+        }
+    }
+    // ==========================================
 
     void Update()
     {
@@ -190,13 +206,11 @@ public class EnemyStats : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // ⭐ ฟังก์ชันสำหรับหน่วงเวลา 5 วินาทีก่อนวาร์ป
-    // ⭐ ฟังก์ชันสำหรับหน่วงเวลา 5 วินาทีก่อนวาร์ป
     IEnumerator BossDeathRoutine()
     {
         Debug.Log("👑 บอสตายแล้ว! กำลังหยุดสคริปต์โจมตีและรอวาร์ป...");
 
-        // 1. ⭐ สั่งปิดสคริปต์สุ่มโจมตี (BossAttackRandomizer) ทันที
+        // 1. สั่งปิดสคริปต์สุ่มโจมตี (BossAttackRandomizer) ทันที
         BossAttackRandomizer attackScript = GetComponent<BossAttackRandomizer>();
         if (attackScript != null)
         {

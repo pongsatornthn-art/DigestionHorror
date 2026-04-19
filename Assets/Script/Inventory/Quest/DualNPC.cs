@@ -128,7 +128,14 @@ public class DualNPC : MonoBehaviour
             if (currentQuestIndex >= quests.Count)
             {
                 bossPlaceholder.SetActive(true);
-                Debug.Log("🔥 เควสหมดแล้ว! ทำการเสก Boss Placeholder ออกมา!");
+
+                // ⭐ สั่งให้บอสรีเซ็ตเลือดทันทีที่โหลดเซฟ หรือเปลี่ยนสถานะเควส
+                EnemyStats bossStats = bossPlaceholder.GetComponentInChildren<EnemyStats>();
+                if (bossStats != null)
+                {
+                    bossStats.ResetHealth(); // เรียกฟังก์ชันที่เราเพิ่งสร้างไว้
+                    Debug.Log("🩸 บอสเกิดใหม่/โหลดเซฟ: รีเซ็ตเลือดเต็ม 100% เรียบร้อย!");
+                }
             }
             else
             {

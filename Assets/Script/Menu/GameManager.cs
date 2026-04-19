@@ -247,6 +247,20 @@ public class GameManager : MonoBehaviour
             string json = PlayerPrefs.GetString("SaveSlot_" + slotNumber);
             SaveData data = JsonUtility.FromJson<SaveData>(json);
 
+            // ==========================================
+            // ⭐ ลบกล่องศพ/ของดรอปทิ้งทั้งหมด ป้องกันผู้เล่นปั๊มของ!
+            // ==========================================
+            LootBox[] allDroppedBoxes = FindObjectsByType<LootBox>(FindObjectsSortMode.None);
+            foreach (LootBox box in allDroppedBoxes)
+            {
+                if (box != null)
+                {
+                    Destroy(box.gameObject);
+                }
+            }
+            Debug.Log("🗑️ ลบกล่องศพทิ้งทั้งหมดแล้ว! หมดสิทธิ์ปั๊มของนะจ๊ะ");
+            // ==========================================
+
             if (PlayerController.instance != null)
             {
                 PlayerController.instance.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;

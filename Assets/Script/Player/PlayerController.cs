@@ -349,7 +349,8 @@ public class PlayerController : MonoBehaviour
 
         if (playerDeathBoxPrefab != null && Inventory.instance != null)
         {
-            List<InventoryItem> droppedItems = Inventory.instance.DropAllItemsExcept("Knife");
+            // ⭐ แก้ไขให้ตกทุกอย่างจริงๆ! ไม่มีข้อยกเว้นแม้แต่มีด
+            List<InventoryItem> droppedItems = Inventory.instance.DropAllItemsExcept("");
 
             if (droppedItems.Count > 0)
             {
@@ -364,14 +365,11 @@ public class PlayerController : MonoBehaviour
         }
 
         // ==========================================
-        // ⭐ ระบบแอนิเมชันตายแบบฉลาด (รวบตึงไฟล์เดียวจบ)
+        // ⭐ ระบบแอนิเมชันตายแบบฉลาด (ทิ้งอาวุธก่อนตาย!)
         // ==========================================
 
-        // 1. ซ่อนอาวุธที่ถืออยู่ออกไป
-        if (currentActiveHolder != null)
-        {
-            currentActiveHolder.SetActive(false);
-        }
+        // 1. บังคับถอดอาวุธทุกชิ้นในมือทิ้งไปเลย! (เปลี่ยนเป็นมือเปล่า) เพื่อกันบั๊กแอนิเมชัน
+        EquipWeapon(null);
 
         // 2. เปิดตัวละครหลักขึ้นมา แล้วสั่งเล่นท่าตาย!
         if (bodyTransform != null)
@@ -404,28 +402,29 @@ public class PlayerController : MonoBehaviour
         currentStamina = maxStamina;
         UpdateUI();
 
-        if (currentActiveHolder != null)
-        {
-            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", false);
-        }
         if (respawnPoint != null)
         {
             transform.position = respawnPoint.position;
         }
 
-        // ⭐ รีเซ็ตสถานะ ป้องกันการบั๊กเดินไม่ได้ตอนเกิดใหม่
         StopAllCoroutines();
         isDashing = false;
         canDash = true;
         isInvulnerable = false;
-
-        this.enabled = true;
         isKnockbacked = false;
+        this.enabled = true;
+
+        // ⭐ ปลุกให้ตื่นมา "มือเปล่า" เสมอ! 
+        // (เพราะของทุกอย่างรวมถึงมีดไปตกอยู่ในกล่องศพหมดแล้ว)
+        EquipWeapon(null);
     }
 
     public void EquipWeapon(ItemData newItem)
     {
         currentWeapon = newItem;
+
+        // ⭐ ยกเลิกดาเมจผีหลอก (ถ้ากดสลับของตอนกำลังง้างมือตี จะได้ไม่ทำดาเมจฟรี)
+        CancelInvoke("DealDamage");
 
         if (knifeHolder) knifeHolder.SetActive(false);
         if (axeHolder) axeHolder.SetActive(false);
@@ -441,7 +440,18 @@ public class PlayerController : MonoBehaviour
 
         if (!isWeapon)
         {
-            if (bodyTransform != null) bodyTransform.gameObject.SetActive(true);
+            if (bodyTransform != null)
+            {
+                bodyTransform.gameObject.SetActive(true);
+            }
+
+            // ⭐ บังคับรีเซ็ตตัวละคร (มือเปล่า) ให้กลับมายืนปกติ แก้บั๊กท่าค้าง!
+            if (bodyAnim != null && bodyTransform.gameObject.activeInHierarchy)
+            {
+                bodyAnim.ResetTrigger("Attack");
+                bodyAnim.SetBool("IsDead", false);
+                bodyAnim.Play("Iden", 0, 0f);
+            }
             return;
         }
 
@@ -453,6 +463,15 @@ public class PlayerController : MonoBehaviour
         {
             if (bodyTransform != null) bodyTransform.gameObject.SetActive(false);
             currentActiveHolder.SetActive(true);
+
+            // ⭐ บังคับรีเซ็ตอาวุธที่ถือ ให้กลับมายืนเตรียมพร้อมเสมอ แก้บั๊กค้าง!
+            Animator weaponAnim = currentActiveHolder.GetComponent<Animator>();
+            if (weaponAnim != null && currentActiveHolder.activeInHierarchy)
+            {
+                weaponAnim.ResetTrigger("Attack");
+                weaponAnim.SetBool("IsDead", false);
+                weaponAnim.Play("Iden", 0, 0f);
+            }
 
             Weapon activeWeapon = currentActiveHolder.GetComponent<Weapon>();
             if (activeWeapon != null)
