@@ -363,20 +363,35 @@ public class PlayerController : MonoBehaviour
             }
         }
 
+        // ==========================================
+        // ⭐ ระบบแอนิเมชันตายแบบฉลาด (รวบตึงไฟล์เดียวจบ)
+        // ==========================================
+
+        // 1. ซ่อนอาวุธที่ถืออยู่ออกไป
         if (currentActiveHolder != null)
         {
-            currentActiveHolder.GetComponent<Animator>().SetBool("IsDead", true);
+            currentActiveHolder.SetActive(false);
         }
+
+        // 2. เปิดตัวละครหลักขึ้นมา แล้วสั่งเล่นท่าตาย!
+        if (bodyTransform != null)
+        {
+            bodyTransform.gameObject.SetActive(true);
+
+            Animator bodyAnim = bodyTransform.GetComponent<Animator>();
+            if (bodyAnim != null)
+            {
+                bodyAnim.SetBool("IsDead", true);
+            }
+        }
+
+        // ==========================================
 
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
 
-        // ⭐ หยุดความเร็วของตัวละคร เพื่อไม่ให้ศพไถลไปกับพื้น
         if (rb != null) rb.linearVelocity = Vector2.zero;
 
-        this.enabled = false; // ปิดการควบคุมผู้เล่น
-
-        // ⭐ ลบ Time.timeScale = 0f; ออกไปแล้ว 
-        // ทำให้เวลาในเกมยังเดินปกติ มอนสเตอร์ยังขยับได้!
+        this.enabled = false;
     }
 
     public void RestartGame()
